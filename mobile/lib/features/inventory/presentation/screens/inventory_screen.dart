@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../businesses/domain/entities/business.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/usecases/get_items.dart';
+import 'add_item_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
   final Business business;
@@ -43,11 +44,31 @@ class _InventoryScreenState extends State<InventoryScreen> {
     });
   }
 
+  Future<void> _openAddItem() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddItemScreen(
+          business: widget.business,
+        ),
+      ),
+    );
+
+    await _loadItems();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Inventory'),
+        actions: [
+          IconButton(
+            onPressed: _openAddItem,
+            icon: const Icon(Icons.add),
+            tooltip: 'Add Item',
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(
@@ -56,6 +77,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
           : items.isEmpty
           ? _buildEmptyState()
           : _buildItemList(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openAddItem,
+        child: const Icon(Icons.add),
+      ),
     );
   }
 
@@ -85,6 +110,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
               'No inventory items have been added to '
                   '${widget.business.name} yet.',
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: _openAddItem,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Item'),
             ),
           ],
         ),
