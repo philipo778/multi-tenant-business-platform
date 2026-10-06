@@ -23,9 +23,10 @@ class BusinessRepositoryImpl implements BusinessRepository {
     final model = BusinessModel(
       id: business.id,
       name: business.name,
-      businessType: business.businessType,
+      category: business.category,
       location: business.location,
       isActive: business.isActive,
+      enabledModules: business.enabledModules,
     );
 
     return remoteDataSource.createBusiness(model);
@@ -36,9 +37,10 @@ class BusinessRepositoryImpl implements BusinessRepository {
     final model = BusinessModel(
       id: business.id,
       name: business.name,
-      businessType: business.businessType,
+      category: business.category,
       location: business.location,
       isActive: business.isActive,
+      enabledModules: business.enabledModules,
     );
 
     return remoteDataSource.updateBusiness(model);

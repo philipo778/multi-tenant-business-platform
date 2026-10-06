@@ -4,18 +4,22 @@ class BusinessModel extends Business {
   const BusinessModel({
     required super.id,
     required super.name,
-    required super.businessType,
+    required super.category,
     required super.location,
     required super.isActive,
+    required super.enabledModules,
   });
 
   factory BusinessModel.fromJson(Map<String, dynamic> json) {
     return BusinessModel(
       id: json['id'],
       name: json['name'],
-      businessType: json['business_type'],
+      category: json['category'],
       location: json['location'],
       isActive: json['is_active'],
+      enabledModules: List<String>.from(
+        json['enabled_modules'] ?? [],
+      ),
     );
   }
 
@@ -23,9 +27,10 @@ class BusinessModel extends Business {
     return {
       'id': id,
       'name': name,
-      'business_type': businessType,
+      'category': category,
       'location': location,
       'is_active': isActive,
+      'enabled_modules': enabledModules,
     };
   }
 }

@@ -13,19 +13,16 @@ import '../../features/businesses/domain/usecases/update_business.dart';
 final getIt = GetIt.instance;
 
 void setupDependencies() {
-  // Data source
   getIt.registerLazySingleton<BusinessRemoteDataSource>(
         () => BusinessRemoteDataSourceImpl(),
   );
 
-  // Repository
   getIt.registerLazySingleton<BusinessRepository>(
         () => BusinessRepositoryImpl(
       getIt<BusinessRemoteDataSource>(),
     ),
   );
 
-  // Use cases
   getIt.registerLazySingleton<GetBusinesses>(
         () => GetBusinesses(
       getIt<BusinessRepository>(),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'core/di/injection.dart';
+import 'features/businesses/presentation/screens/business_list_screen.dart';
+import 'core/theme/app_theme.dart';
 
 void main() {
   setupDependencies();
@@ -15,16 +17,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return  MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Multi-Tenant Business Platform'),
-        ),
-        body: const Center(
-          child: Text('Flutter project ready'),
-        ),
-      ),
+      title: 'Multi-Tenant Business Platform',
+      theme: AppTheme.lightTheme,
+      home: const BusinessListScreen(),
     );
   }
 }
