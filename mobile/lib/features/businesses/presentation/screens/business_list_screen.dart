@@ -1,70 +1,42 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../domain/entities/business.dart';
+import '../../domain/usecases/get_businesses.dart';
 import '../widgets/business_card.dart';
 import 'business_dashboard_screen.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import 'create_business_screen.dart';
 
-class BusinessListScreen extends StatelessWidget {
+class BusinessListScreen extends StatefulWidget {
   const BusinessListScreen({super.key});
 
-  final List<Business> businesses = const [
-    Business(
-      id: '1',
-      name: 'Phililancer Stationery',
-      category: 'Retail',
-      location: 'Dar es Salaam',
-      isActive: true,
-      enabledModules: [
-        'sales',
-        'inventory',
-        'expenses',
-        'debts',
-        'reports',
-      ],
-    ),
-    Business(
-      id: '2',
-      name: 'Phililancer Mobile Money',
-      category: 'Mobile Money',
-      location: 'Dar es Salaam',
-      isActive: true,
-      enabledModules: [
-        'transactions',
-        'float',
-        'cash',
-        'vouchers',
-        'reports',
-      ],
-    ),
-    Business(
-      id: '3',
-      name: 'Phililancer Lodge',
-      category: 'Lodge',
-      location: 'Dodoma',
-      isActive: true,
-      enabledModules: [
-        'rooms',
-        'bookings',
-        'expenses',
-        'reports',
-      ],
-    ),
-    Business(
-      id: '4',
-      name: 'Phililancer Beverage Shop',
-      category: 'Beverage',
-      location: 'Dar es Salaam',
-      isActive: false,
-      enabledModules: [
-        'sales',
-        'inventory',
-        'expenses',
-        'reports',
-      ],
-    ),
-  ];
+  @override
+  State<BusinessListScreen> createState() => _BusinessListScreenState();
+}
+
+class _BusinessListScreenState extends State<BusinessListScreen> {
+  final GetBusinesses _getBusinesses = getIt<GetBusinesses>();
+
+  List<Business> businesses = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBusinesses();
+  }
+
+  Future<void> _loadBusinesses() async {
+    final result = await _getBusinesses();
+
+    if (!mounted) return;
+
+    setState(() {
+      businesses = result;
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,31 +46,47 @@ class BusinessListScreen extends StatelessWidget {
         title: const Text('My Businesses'),
         actions: [
           IconButton(
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const CreateBusinessScreen(),
                 ),
               );
+
+              await _loadBusinesses();
             },
             icon: const Icon(Icons.add),
           ),
         ],
       ),
-      body: ListView.builder(
+      body: isLoading
+          ? const Center(
+        child: CircularProgressIndicator(),
+      )
+          : businesses.isEmpty
+          ? const Center(
+        child: Text(
+          'No businesses found.',
+          style: TextStyle(fontSize: 16),
+        ),
+      )
+          : ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: businesses.length,
         itemBuilder: (context, index) {
+          final business = businesses[index];
+
           return BusinessCard(
-            business: businesses[index],
+            business: business,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => BusinessDashboardScreen(
-                    business: businesses[index],
-                  ),
+                  builder: (context) =>
+                      BusinessDashboardScreen(
+                        business: business,
+                      ),
                 ),
               );
             },
