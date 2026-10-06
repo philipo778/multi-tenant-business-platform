@@ -6,12 +6,14 @@ class DashboardModuleCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
+  final VoidCallback? onTap;
 
   const DashboardModuleCard({
     super.key,
     required this.title,
     required this.subtitle,
     required this.icon,
+    this.onTap,
   });
 
   @override
@@ -19,7 +21,7 @@ class DashboardModuleCard extends StatelessWidget {
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {},
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -32,12 +34,11 @@ class DashboardModuleCard extends StatelessWidget {
                   color: AppTheme.action,
                 ),
               ),
-
               const SizedBox(width: 14),
-
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
@@ -56,7 +57,6 @@ class DashboardModuleCard extends StatelessWidget {
                   ],
                 ),
               ),
-
               const Icon(
                 Icons.chevron_right,
                 color: AppTheme.header,

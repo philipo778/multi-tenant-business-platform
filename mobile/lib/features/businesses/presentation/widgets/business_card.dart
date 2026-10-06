@@ -83,7 +83,7 @@ class BusinessCard extends StatelessWidget {
                     const SizedBox(height: 8),
 
                     Text(
-                      '${business.enabledModules.length} modules enabled',
+                      '${business.enabledModules.length} module_placeholder_screen.dart enabled',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppTheme.header,

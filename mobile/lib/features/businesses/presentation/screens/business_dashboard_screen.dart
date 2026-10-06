@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/entities/business.dart';
 import '../widgets/dashboard_module_card.dart';
+import 'modules/module_placeholder_screen.dart';
 
 class BusinessDashboardScreen extends StatelessWidget {
   final Business business;
@@ -29,18 +30,12 @@ class BusinessDashboardScreen extends StatelessWidget {
               color: AppTheme.header,
             ),
           ),
-
           const SizedBox(height: 4),
-
           Text(
             business.location,
-            style: const TextStyle(
-              fontSize: 14,
-            ),
+            style: const TextStyle(fontSize: 14),
           ),
-
           const SizedBox(height: 24),
-
           const Text(
             'Business Modules',
             style: TextStyle(
@@ -49,17 +44,30 @@ class BusinessDashboardScreen extends StatelessWidget {
               color: AppTheme.header,
             ),
           ),
-
           const SizedBox(height: 12),
-
           ...business.enabledModules.map(
                 (module) => DashboardModuleCard(
               title: _moduleTitle(module),
               subtitle: _moduleSubtitle(module),
               icon: _moduleIcon(module),
+              onTap: () {
+                _openModule(context, module);
+              },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _openModule(BuildContext context, String module) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ModulePlaceholderScreen(
+          title: _moduleTitle(module),
+          subtitle: _moduleSubtitle(module),
+        ),
       ),
     );
   }
