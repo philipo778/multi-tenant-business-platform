@@ -133,6 +133,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
+            onTap: () {
+              // Item details will be opened here.
+            },
             leading: const CircleAvatar(
               backgroundColor: AppTheme.header,
               child: Icon(

@@ -34,7 +34,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
   List<String> get _categories {
     return ItemCategoryConfig.categoriesFor(
-      widget.business.category,
+      businessCategory: widget.business.category,
+      businessSubCategory: widget.business.subCategory,
     );
   }
 
@@ -144,7 +145,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
               decoration: InputDecoration(
                 labelText: 'Item Name',
                 hintText: ItemCategoryConfig.nameHintFor(
-                  widget.business.category,
+                  businessCategory: widget.business.category,
+                  businessSubCategory: widget.business.subCategory,
                 ),
                 border: const OutlineInputBorder(),
               ),

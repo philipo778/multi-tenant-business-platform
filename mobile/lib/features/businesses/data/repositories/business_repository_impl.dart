@@ -28,6 +28,7 @@ class BusinessRepositoryImpl implements BusinessRepository {
       id: business.id,
       name: business.name,
       category: business.category,
+      subCategory: business.subCategory,
       location: business.location,
       isActive: business.isActive,
       enabledModules: business.enabledModules,

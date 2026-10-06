@@ -1,17 +1,57 @@
 class ItemCategoryConfig {
-  static List<String> categoriesFor(String businessCategory) {
-    switch (businessCategory) {
-      case 'Retail':
+  static List<String> categoriesFor({
+    required String businessCategory,
+    required String businessSubCategory,
+  }) {
+    switch (businessSubCategory) {
+      case 'Stationery':
         return [
-          'Stationery',
-          'School Supplies',
+          'Writing Materials',
+          'Paper Products',
+          'Exercise Books',
           'Office Supplies',
-          'Electronics',
-          'Food',
+          'School Supplies',
+          'Art Supplies',
           'Other',
         ];
 
-      case 'Beverage':
+      case 'Grocery':
+        return [
+          'Food',
+          'Household Items',
+          'Personal Care',
+          'Cleaning Products',
+          'Other',
+        ];
+
+      case 'Electronics':
+        return [
+          'Phones',
+          'Computer Accessories',
+          'Chargers & Cables',
+          'Audio',
+          'Other',
+        ];
+
+      case 'Clothing':
+        return [
+          'Men',
+          'Women',
+          'Children',
+          'Shoes',
+          'Accessories',
+          'Other',
+        ];
+
+      case 'General Retail':
+        return [
+          'General Products',
+          'Household Items',
+          'Personal Care',
+          'Other',
+        ];
+
+      case 'Beverage Shop':
         return [
           'Soft Drinks',
           'Water',
@@ -21,16 +61,18 @@ class ItemCategoryConfig {
           'Other',
         ];
 
-      case 'Mobile Money':
+      case 'Mobile Money Shop':
         return [
           'Airtime',
           'Voucher',
           'SIM Card',
-          'Service',
+          'Mobile Money Service',
           'Other',
         ];
 
       case 'Lodge':
+      case 'Guest House':
+      case 'Hotel':
         return [
           'Accommodation',
           'Food',
@@ -39,7 +81,7 @@ class ItemCategoryConfig {
           'Other',
         ];
 
-      case 'Other':
+      case 'General Business':
         return [
           'General',
           'Service',
@@ -54,19 +96,36 @@ class ItemCategoryConfig {
     }
   }
 
-  static String nameHintFor(String businessCategory) {
-    switch (businessCategory) {
-      case 'Retail':
+  static String nameHintFor({
+    required String businessCategory,
+    required String businessSubCategory,
+  }) {
+    switch (businessSubCategory) {
+      case 'Stationery':
         return 'e.g. A4 Paper';
 
-      case 'Beverage':
+      case 'Grocery':
+        return 'e.g. Rice 1kg';
+
+      case 'Electronics':
+        return 'e.g. USB-C Charger';
+
+      case 'Clothing':
+        return 'e.g. Men T-Shirt';
+
+      case 'General Retail':
+        return 'e.g. Laundry Basket';
+
+      case 'Beverage Shop':
         return 'e.g. Coca-Cola 500ml';
 
-      case 'Mobile Money':
+      case 'Mobile Money Shop':
         return 'e.g. Vodacom Airtime 1000';
 
       case 'Lodge':
-        return 'e.g. Room 101 Service';
+      case 'Guest House':
+      case 'Hotel':
+        return 'e.g. Room Service';
 
       default:
         return 'e.g. Business Item';

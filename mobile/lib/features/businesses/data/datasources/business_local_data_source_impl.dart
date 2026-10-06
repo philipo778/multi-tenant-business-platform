@@ -8,6 +8,7 @@ class BusinessLocalDataSourceImpl
       id: '1',
       name: 'Phililancer Stationery',
       category: 'Retail',
+      subCategory: 'Stationery',
       location: 'Dar es Salaam',
       isActive: true,
       enabledModules: [
@@ -22,6 +23,7 @@ class BusinessLocalDataSourceImpl
       id: '2',
       name: 'Phililancer Mobile Money',
       category: 'Mobile Money',
+      subCategory: 'Mobile Money Shop',
       location: 'Dar es Salaam',
       isActive: true,
       enabledModules: [
@@ -36,6 +38,7 @@ class BusinessLocalDataSourceImpl
       id: '3',
       name: 'Phililancer Lodge',
       category: 'Lodge',
+      subCategory: 'Lodge',
       location: 'Dodoma',
       isActive: true,
       enabledModules: [
@@ -49,6 +52,7 @@ class BusinessLocalDataSourceImpl
       id: '4',
       name: 'Phililancer Beverage Shop',
       category: 'Beverage',
+      subCategory: 'Beverage Shop',
       location: 'Dar es Salaam',
       isActive: false,
       enabledModules: [

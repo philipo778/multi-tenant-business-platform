@@ -22,6 +22,7 @@ class _CreateBusinessScreenState
   final _locationController = TextEditingController();
 
   String _selectedCategory = 'Retail';
+  String _selectedSubCategory = 'Stationery';
 
   final List<String> _categories = [
     'Retail',
@@ -30,6 +31,43 @@ class _CreateBusinessScreenState
     'Beverage',
     'Other',
   ];
+
+  final Map<String, List<String>> _subCategories = {
+    'Retail': [
+      'Stationery',
+      'Grocery',
+      'Electronics',
+      'Clothing',
+      'General Retail',
+    ],
+    'Mobile Money': [
+      'Mobile Money Shop',
+    ],
+    'Lodge': [
+      'Lodge',
+      'Guest House',
+      'Hotel',
+    ],
+    'Beverage': [
+      'Beverage Shop',
+    ],
+    'Other': [
+      'General Business',
+    ],
+  };
+
+  List<String> get _availableSubCategories {
+    return _subCategories[_selectedCategory] ??
+        ['General Business'];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _selectedSubCategory =
+        _availableSubCategories.first;
+  }
 
   @override
   void dispose() {
@@ -47,6 +85,7 @@ class _CreateBusinessScreenState
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: _nameController.text.trim(),
       category: _selectedCategory,
+      subCategory: _selectedSubCategory,
       location: _locationController.text.trim(),
       isActive: true,
       enabledModules:
@@ -94,14 +133,18 @@ class _CreateBusinessScreenState
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.header,
+                color: Color(0xFF0C5446),
               ),
             ),
+
             const SizedBox(height: 8),
+
             const Text(
               'Add a new business to your account.',
             ),
+
             const SizedBox(height: 24),
+
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(
@@ -114,10 +157,13 @@ class _CreateBusinessScreenState
                     value.trim().isEmpty) {
                   return 'Business name is required';
                 }
+
                 return null;
               },
             ),
+
             const SizedBox(height: 16),
+
             DropdownButtonFormField<String>(
               initialValue: _selectedCategory,
               decoration: const InputDecoration(
@@ -131,14 +177,43 @@ class _CreateBusinessScreenState
                 );
               }).toList(),
               onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                }
+                if (value == null) return;
+
+                setState(() {
+                  _selectedCategory = value;
+                  _selectedSubCategory =
+                      _availableSubCategories.first;
+                });
               },
             ),
+
             const SizedBox(height: 16),
+
+            DropdownButtonFormField<String>(
+              initialValue: _selectedSubCategory,
+              decoration: const InputDecoration(
+                labelText: 'Business Type',
+                helperText:
+                'More specific type of this business.',
+                border: OutlineInputBorder(),
+              ),
+              items: _availableSubCategories.map((subCategory) {
+                return DropdownMenuItem(
+                  value: subCategory,
+                  child: Text(subCategory),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value == null) return;
+
+                setState(() {
+                  _selectedSubCategory = value;
+                });
+              },
+            ),
+
+            const SizedBox(height: 16),
+
             TextFormField(
               controller: _locationController,
               decoration: const InputDecoration(
@@ -151,10 +226,13 @@ class _CreateBusinessScreenState
                     value.trim().isEmpty) {
                   return 'Location is required';
                 }
+
                 return null;
               },
             ),
+
             const SizedBox(height: 28),
+
             SizedBox(
               height: 50,
               child: FilledButton(
