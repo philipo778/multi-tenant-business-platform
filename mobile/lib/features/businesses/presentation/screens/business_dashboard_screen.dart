@@ -65,6 +65,7 @@ class BusinessDashboardScreen extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (context) => ModulePlaceholderScreen(
+          business: business,
           title: _moduleTitle(module),
           subtitle: _moduleSubtitle(module),
         ),

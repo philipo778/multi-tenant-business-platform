@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/app_theme.dart';
+import '../../../domain/entities/business.dart';
 
 class ModulePlaceholderScreen extends StatelessWidget {
+  final Business business;
   final String title;
   final String subtitle;
 
   const ModulePlaceholderScreen({
     super.key,
+    required this.business,
     required this.title,
     required this.subtitle,
   });
@@ -42,6 +45,21 @@ class ModulePlaceholderScreen extends StatelessWidget {
               Text(
                 subtitle,
                 textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                business.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.header,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                business.category,
+                style: const TextStyle(
+                  color: AppTheme.action,
+                ),
               ),
               const SizedBox(height: 20),
               const Text(
