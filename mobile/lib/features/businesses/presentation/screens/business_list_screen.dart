@@ -4,6 +4,7 @@ import '../../domain/entities/business.dart';
 import '../widgets/business_card.dart';
 import 'business_dashboard_screen.dart';
 import '../../../../shared/widgets/app_drawer.dart';
+import 'create_business_screen.dart';
 
 class BusinessListScreen extends StatelessWidget {
   const BusinessListScreen({super.key});
@@ -73,7 +74,14 @@ class BusinessListScreen extends StatelessWidget {
         title: const Text('My Businesses'),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CreateBusinessScreen(),
+                ),
+              );
+            },
             icon: const Icon(Icons.add),
           ),
         ],
