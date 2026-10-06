@@ -1,0 +1,210 @@
+import 'package:flutter/material.dart';
+
+import '../../../../core/theme/app_theme.dart';
+import '../../../businesses/domain/entities/business.dart';
+import '../../domain/entities/item.dart';
+
+class ItemDetailsScreen extends StatelessWidget {
+  final Business business;
+  final Item item;
+
+  const ItemDetailsScreen({
+    super.key,
+    required this.business,
+    required this.item,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isProduct = item.tracksInventory;
+    final bool isLowStock =
+        isProduct &&
+            item.stockQuantity <= item.reorderThreshold;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Item Details'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Item Header
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 34,
+                    backgroundColor:
+                    AppTheme.header.withValues(alpha: 0.1),
+                    child: Icon(
+                      isProduct
+                          ? Icons.inventory_2_outlined
+                          : Icons.design_services_outlined,
+                      size: 34,
+                      color: AppTheme.header,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    item.name,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.header,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    item.category,
+                    style: const TextStyle(
+                      color: AppTheme.action,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Business Information
+          _sectionTitle('Business Information'),
+
+          Card(
+            child: Column(
+              children: [
+                _infoTile(
+                  icon: Icons.business_outlined,
+                  title: 'Business',
+                  value: business.name,
+                ),
+                _infoTile(
+                  icon: Icons.category_outlined,
+                  title: 'Business Type',
+                  value: business.subCategory,
+                ),
+                _infoTile(
+                  icon: Icons.location_on_outlined,
+                  title: 'Location',
+                  value: business.location,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Item Information
+          _sectionTitle('Item Information'),
+
+          Card(
+            child: Column(
+              children: [
+                _infoTile(
+                  icon: Icons.sell_outlined,
+                  title: 'Item Type',
+                  value: isProduct ? 'Product' : 'Service',
+                ),
+                _infoTile(
+                  icon: Icons.payments_outlined,
+                  title: 'Selling Price',
+                  value:
+                  'TZS ${item.unitPrice.toStringAsFixed(0)}',
+                ),
+                _infoTile(
+                  icon: Icons.shopping_cart_outlined,
+                  title: 'Cost Price',
+                  value:
+                  'TZS ${item.costPrice.toStringAsFixed(0)}',
+                ),
+              ],
+            ),
+          ),
+
+          if (isProduct) ...[
+            const SizedBox(height: 16),
+
+            _sectionTitle('Inventory Information'),
+
+            Card(
+              child: Column(
+                children: [
+                  _infoTile(
+                    icon: Icons.inventory_2_outlined,
+                    title: 'Current Stock',
+                    value: item.stockQuantity
+                        .toStringAsFixed(0),
+                  ),
+                  _infoTile(
+                    icon: Icons.warning_amber_outlined,
+                    title: 'Reorder Threshold',
+                    value: item.reorderThreshold
+                        .toStringAsFixed(0),
+                  ),
+                  _infoTile(
+                    icon: isLowStock
+                        ? Icons.warning_outlined
+                        : Icons.check_circle_outline,
+                    title: 'Stock Status',
+                    value: isLowStock
+                        ? 'Low Stock'
+                        : 'Stock Available',
+                    valueColor: isLowStock
+                        ? Colors.red
+                        : Colors.green,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: AppTheme.header,
+        ),
+      ),
+    );
+  }
+
+  Widget _infoTile({
+    required IconData icon,
+    required String title,
+    required String value,
+    Color? valueColor,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: AppTheme.action,
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 13,
+        ),
+      ),
+      trailing: Text(
+        value,
+        textAlign: TextAlign.end,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: valueColor ?? AppTheme.header,
+        ),
+      ),
+    );
+  }
+}

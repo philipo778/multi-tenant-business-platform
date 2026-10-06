@@ -6,6 +6,7 @@ import '../../../businesses/domain/entities/business.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/usecases/get_items.dart';
 import 'add_item_screen.dart';
+import 'item_details_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
   final Business business;
@@ -55,6 +56,18 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
 
     await _loadItems();
+  }
+
+  void _openItemDetails(Item item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ItemDetailsScreen(
+          business: widget.business,
+          item: item,
+        ),
+      ),
+    );
   }
 
   @override
@@ -134,7 +147,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             onTap: () {
-              // Item details will be opened here.
+              _openItemDetails(item);
             },
             leading: const CircleAvatar(
               backgroundColor: AppTheme.header,
