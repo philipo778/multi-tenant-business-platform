@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'core/di/injection.dart';
-import 'features/businesses/presentation/screens/business_list_screen.dart';
 import 'core/theme/app_theme.dart';
+import 'features/businesses/presentation/screens/business_list_screen.dart';
 
 void main() {
   setupDependencies();
-
-  runApp(
-    const MyApp(),
-  );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -17,7 +14,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return  MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Multi-Tenant Business Platform',
       theme: AppTheme.lightTheme,

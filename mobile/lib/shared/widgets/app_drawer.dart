@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../features/businesses/presentation/screens/owner_dashboard_screen.dart';
 import '../../features/businesses/presentation/screens/business_list_screen.dart';
+import '../../features/businesses/presentation/screens/owner_dashboard_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -22,9 +22,7 @@ class AppDrawer extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            accountEmail: const Text(
-              'Owner',
-            ),
+            accountEmail: const Text('Owner'),
             currentAccountPicture: const CircleAvatar(
               backgroundColor: Colors.white,
               child: Icon(
@@ -33,71 +31,63 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
           ),
-
           ListTile(
             leading: const Icon(Icons.dashboard_outlined),
             title: const Text('Dashboard'),
             onTap: () {
               Navigator.pop(context);
-
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const OwnerDashboardScreen(),
+                  builder: (context) =>
+                  const OwnerDashboardScreen(),
                 ),
               );
             },
           ),
-
           ListTile(
             leading: const Icon(Icons.business_outlined),
             title: const Text('My Businesses'),
             onTap: () {
               Navigator.pop(context);
-
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const BusinessListScreen(),
+                  builder: (context) =>
+                  const BusinessListScreen(),
                 ),
               );
             },
           ),
-
           ListTile(
             leading: const Icon(Icons.bar_chart_outlined),
             title: const Text('Reports'),
             onTap: () {},
           ),
-
           ListTile(
-            leading: const Icon(Icons.receipt_long_outlined),
+            leading: const Icon(
+              Icons.receipt_long_outlined,
+            ),
             title: const Text('Expenses'),
             onTap: () {},
           ),
-
           ListTile(
             leading: const Icon(Icons.people_outline),
             title: const Text('Users & Staff'),
             onTap: () {},
           ),
-
           ListTile(
             leading: const Icon(Icons.settings_outlined),
             title: const Text('Settings'),
             onTap: () {},
           ),
-
           const Spacer(),
-
           const Divider(),
-
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Logout'),
             onTap: () {},
           ),
-
           const SizedBox(height: 12),
         ],
       ),
