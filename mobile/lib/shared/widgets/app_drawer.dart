@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../features/businesses/presentation/screens/owner_dashboard_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -35,7 +36,16 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.dashboard_outlined),
             title: const Text('Dashboard'),
-            onTap: () {},
+            onTap: () {
+              Navigator.pop(context);
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const OwnerDashboardScreen(),
+                ),
+              );
+            },
           ),
 
           ListTile(
