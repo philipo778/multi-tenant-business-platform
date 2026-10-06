@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../domain/entities/business.dart';
+import '../../domain/usecases/create_business.dart';
 
 class CreateBusinessScreen extends StatefulWidget {
   const CreateBusinessScreen({super.key});
 
   @override
-  State<CreateBusinessScreen> createState() => _CreateBusinessScreenState();
+  State<CreateBusinessScreen> createState() =>
+      _CreateBusinessScreenState();
 }
 
-class _CreateBusinessScreenState extends State<CreateBusinessScreen> {
+class _CreateBusinessScreenState
+    extends State<CreateBusinessScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
@@ -32,16 +37,41 @@ class _CreateBusinessScreenState extends State<CreateBusinessScreen> {
     super.dispose();
   }
 
-  void _createBusiness() {
+  Future<void> _createBusiness() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Business information is valid'),
-      ),
+    final business = Business(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: _nameController.text.trim(),
+      category: _selectedCategory,
+      location: _locationController.text.trim(),
+      isActive: true,
+      enabledModules: [],
     );
+
+    try {
+      await getIt<CreateBusiness>()(business);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Business created successfully'),
+        ),
+      );
+
+      Navigator.pop(context, business);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create business: $e'),
+        ),
+      );
+    }
   }
 
   @override

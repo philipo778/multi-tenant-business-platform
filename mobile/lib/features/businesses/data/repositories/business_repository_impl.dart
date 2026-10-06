@@ -1,21 +1,25 @@
 import '../../domain/entities/business.dart';
 import '../../domain/repositories/business_repository.dart';
-import '../datasources/business_remote_data_source.dart';
+import '../datasources/business_local_data_source.dart';
 import '../models/business_model.dart';
 
 class BusinessRepositoryImpl implements BusinessRepository {
-  final BusinessRemoteDataSource remoteDataSource;
+  final BusinessLocalDataSource localDataSource;
 
-  BusinessRepositoryImpl(this.remoteDataSource);
+  BusinessRepositoryImpl(this.localDataSource);
 
   @override
   Future<List<Business>> getBusinesses() {
-    return remoteDataSource.getBusinesses();
+    return localDataSource.getBusinesses();
   }
 
   @override
-  Future<Business> getBusinessById(String id) {
-    return remoteDataSource.getBusinessById(id);
+  Future<Business> getBusinessById(String id) async {
+    final businesses = await localDataSource.getBusinesses();
+
+    return businesses.firstWhere(
+          (business) => business.id == id,
+    );
   }
 
   @override
@@ -29,25 +33,16 @@ class BusinessRepositoryImpl implements BusinessRepository {
       enabledModules: business.enabledModules,
     );
 
-    return remoteDataSource.createBusiness(model);
+    return localDataSource.createBusiness(model);
   }
 
   @override
-  Future<Business> updateBusiness(Business business) {
-    final model = BusinessModel(
-      id: business.id,
-      name: business.name,
-      category: business.category,
-      location: business.location,
-      isActive: business.isActive,
-      enabledModules: business.enabledModules,
-    );
-
-    return remoteDataSource.updateBusiness(model);
+  Future<Business> updateBusiness(Business business) async {
+    throw UnimplementedError();
   }
 
   @override
-  Future<void> deleteBusiness(String id) {
-    return remoteDataSource.deleteBusiness(id);
+  Future<void> deleteBusiness(String id) async {
+    throw UnimplementedError();
   }
 }

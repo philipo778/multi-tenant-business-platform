@@ -1,7 +1,7 @@
 import 'package:get_it/get_it.dart';
 
-import '../../features/businesses/data/datasources/business_remote_data_source.dart';
-import '../../features/businesses/data/datasources/business_remote_data_source_impl.dart';
+import '../../features/businesses/data/datasources/business_local_data_source.dart';
+import '../../features/businesses/data/datasources/business_local_data_source_impl.dart';
 import '../../features/businesses/data/repositories/business_repository_impl.dart';
 import '../../features/businesses/domain/repositories/business_repository.dart';
 import '../../features/businesses/domain/usecases/create_business.dart';
@@ -13,13 +13,13 @@ import '../../features/businesses/domain/usecases/update_business.dart';
 final getIt = GetIt.instance;
 
 void setupDependencies() {
-  getIt.registerLazySingleton<BusinessRemoteDataSource>(
-        () => BusinessRemoteDataSourceImpl(),
+  getIt.registerLazySingleton<BusinessLocalDataSource>(
+        () => BusinessLocalDataSourceImpl(),
   );
 
   getIt.registerLazySingleton<BusinessRepository>(
         () => BusinessRepositoryImpl(
-      getIt<BusinessRemoteDataSource>(),
+      getIt<BusinessLocalDataSource>(),
     ),
   );
 
