@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../features/businesses/presentation/screens/owner_dashboard_screen.dart';
+import '../../features/businesses/presentation/screens/business_list_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -53,6 +54,13 @@ class AppDrawer extends StatelessWidget {
             title: const Text('My Businesses'),
             onTap: () {
               Navigator.pop(context);
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BusinessListScreen(),
+                ),
+              );
             },
           ),
 
