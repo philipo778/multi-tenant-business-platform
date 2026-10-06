@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../domain/business_module_config.dart';
 import '../../domain/entities/business.dart';
 import '../../domain/usecases/create_business.dart';
 
@@ -48,7 +49,10 @@ class _CreateBusinessScreenState
       category: _selectedCategory,
       location: _locationController.text.trim(),
       isActive: true,
-      enabledModules: [],
+      enabledModules:
+      BusinessModuleConfig.defaultModulesFor(
+        _selectedCategory,
+      ),
     );
 
     try {
@@ -93,15 +97,11 @@ class _CreateBusinessScreenState
                 color: AppTheme.header,
               ),
             ),
-
             const SizedBox(height: 8),
-
             const Text(
               'Add a new business to your account.',
             ),
-
             const SizedBox(height: 24),
-
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(
@@ -110,16 +110,14 @@ class _CreateBusinessScreenState
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
-                if (value == null || value.trim().isEmpty) {
+                if (value == null ||
+                    value.trim().isEmpty) {
                   return 'Business name is required';
                 }
-
                 return null;
               },
             ),
-
             const SizedBox(height: 16),
-
             DropdownButtonFormField<String>(
               initialValue: _selectedCategory,
               decoration: const InputDecoration(
@@ -140,9 +138,7 @@ class _CreateBusinessScreenState
                 }
               },
             ),
-
             const SizedBox(height: 16),
-
             TextFormField(
               controller: _locationController,
               decoration: const InputDecoration(
@@ -151,16 +147,14 @@ class _CreateBusinessScreenState
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
-                if (value == null || value.trim().isEmpty) {
+                if (value == null ||
+                    value.trim().isEmpty) {
                   return 'Location is required';
                 }
-
                 return null;
               },
             ),
-
             const SizedBox(height: 28),
-
             SizedBox(
               height: 50,
               child: FilledButton(
