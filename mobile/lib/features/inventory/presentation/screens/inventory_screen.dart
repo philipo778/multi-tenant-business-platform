@@ -774,4 +774,5 @@ class _InventoryScreenState extends State<InventoryScreen> {
       ),
     );
   }
+
 }
