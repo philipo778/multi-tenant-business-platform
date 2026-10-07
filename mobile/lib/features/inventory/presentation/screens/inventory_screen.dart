@@ -22,16 +22,32 @@ class InventoryScreen extends StatefulWidget {
 
 class _InventoryScreenState extends State<InventoryScreen> {
   final GetItems _getItems = getIt<GetItems>();
+  final TextEditingController _searchController =
+  TextEditingController();
 
   List<Item> items = [];
   bool isLoading = true;
 
   String _selectedFilter = 'All';
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
+
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.trim().toLowerCase();
+      });
+    });
+
     _loadItems();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadItems() async {
@@ -101,26 +117,42 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   List<Item> _filteredItems() {
+    Iterable<Item> result = items;
+
+    // Stock filter
     switch (_selectedFilter) {
       case 'In Stock':
-        return items.where((item) {
+        result = result.where((item) {
           return item.stockQuantity > item.reorderThreshold;
-        }).toList();
+        });
+        break;
 
       case 'Low Stock':
-        return items.where((item) {
+        result = result.where((item) {
           return item.stockQuantity > 0 &&
               item.stockQuantity <= item.reorderThreshold;
-        }).toList();
+        });
+        break;
 
       case 'Out of Stock':
-        return items.where((item) {
+        result = result.where((item) {
           return item.stockQuantity <= 0;
-        }).toList();
-
-      default:
-        return items;
+        });
+        break;
     }
+
+    // Search filter
+    if (_searchQuery.isNotEmpty) {
+      result = result.where((item) {
+        final name = item.name.toLowerCase();
+        final category = item.category.toLowerCase();
+
+        return name.contains(_searchQuery) ||
+            category.contains(_searchQuery);
+      });
+    }
+
+    return result.toList();
   }
 
   @override
@@ -146,10 +178,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
           ? _buildEmptyState()
           : Column(
         children: [
+          _buildSearchField(),
           _buildFilterBar(),
           Expanded(
             child: filteredItems.isEmpty
-                ? _buildNoFilterResults()
+                ? _buildNoResults()
                 : _buildItemList(filteredItems),
           ),
         ],
@@ -161,12 +194,39 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        8,
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Search items or categories...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+            onPressed: () {
+              _searchController.clear();
+            },
+            icon: const Icon(Icons.clear),
+          )
+              : null,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFilterBar() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.fromLTRB(
         16,
-        16,
+        8,
         16,
         8,
       ),
@@ -197,7 +257,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       },
       selectedColor: AppTheme.header,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppTheme.header,
+        color: isSelected
+            ? Colors.white
+            : AppTheme.header,
         fontWeight: FontWeight.w600,
       ),
     );
@@ -242,7 +304,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  Widget _buildNoFilterResults() {
+  Widget _buildNoResults() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -250,14 +312,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(
-              Icons.filter_list_off,
+              Icons.search_off,
               size: 56,
               color: AppTheme.action,
             ),
             const SizedBox(height: 16),
-            Text(
-              'No $_selectedFilter items',
-              style: const TextStyle(
+            const Text(
+              'No matching items',
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.header,
@@ -265,7 +327,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'There are no items matching this filter.',
+              'Try a different search term or filter.',
               textAlign: TextAlign.center,
             ),
           ],
@@ -295,9 +357,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
             onTap: () {
               _openItemDetails(item);
             },
-            leading: CircleAvatar(
+            leading: const CircleAvatar(
               backgroundColor: AppTheme.header,
-              child: const Icon(
+              child: Icon(
                 Icons.inventory_2_outlined,
                 color: Colors.white,
               ),
@@ -312,11 +374,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
                 children: [
                   Text(
                     '${item.category} • '
-                        'Stock: ${item.stockQuantity.toStringAsFixed(0)}',
+                        'Stock: '
+                        '${item.stockQuantity.toStringAsFixed(0)}',
                   ),
                   const SizedBox(height: 4),
                   Text(
