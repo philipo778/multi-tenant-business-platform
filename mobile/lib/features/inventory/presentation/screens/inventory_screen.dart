@@ -17,7 +17,8 @@ class InventoryScreen extends StatefulWidget {
   });
 
   @override
-  State<InventoryScreen> createState() => _InventoryScreenState();
+  State<InventoryScreen> createState() =>
+      _InventoryScreenState();
 }
 
 class _InventoryScreenState extends State<InventoryScreen> {
@@ -122,14 +123,16 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   int _inStockCount() {
     return items.where((item) {
-      return item.stockQuantity > item.reorderThreshold;
+      return item.stockQuantity >
+          item.reorderThreshold;
     }).length;
   }
 
   int _lowStockCount() {
     return items.where((item) {
       return item.stockQuantity > 0 &&
-          item.stockQuantity <= item.reorderThreshold;
+          item.stockQuantity <=
+              item.reorderThreshold;
     }).length;
   }
 
@@ -216,7 +219,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           ? _buildEmptyState()
           : Column(
         children: [
-          _buildSummary(),
+          _buildCompactSummary(),
           _buildSearchField(),
           _buildFilterBar(),
           Expanded(
@@ -235,153 +238,92 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  Widget _buildSummary() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        16,
-        16,
-        0,
-      ),
-      child: Column(
+  Widget _buildCompactSummary() {
+    return SizedBox(
+      height: 92,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(
+          16,
+          12,
+          16,
+          4,
+        ),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildSummaryCard(
-                  title: 'Total',
-                  value: items.length.toString(),
-                  icon: Icons.inventory_2_outlined,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildSummaryCard(
-                  title: 'In Stock',
-                  value: _inStockCount().toString(),
-                  icon: Icons.check_circle_outline,
-                ),
-              ),
-            ],
+          _buildMiniSummaryCard(
+            title: 'Total',
+            value: items.length.toString(),
+            icon: Icons.inventory_2_outlined,
           ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSummaryCard(
-                  title: 'Low Stock',
-                  value: _lowStockCount().toString(),
-                  icon: Icons.warning_amber_outlined,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildSummaryCard(
-                  title: 'Out of Stock',
-                  value: _outOfStockCount().toString(),
-                  icon: Icons.remove_circle_outline,
-                ),
-              ),
-            ],
+          const SizedBox(width: 10),
+          _buildMiniSummaryCard(
+            title: 'In Stock',
+            value: _inStockCount().toString(),
+            icon: Icons.check_circle_outline,
           ),
-          const SizedBox(height: 10),
-          _buildInventoryValueCard(),
+          const SizedBox(width: 10),
+          _buildMiniSummaryCard(
+            title: 'Low Stock',
+            value: _lowStockCount().toString(),
+            icon: Icons.warning_amber_outlined,
+          ),
+          const SizedBox(width: 10),
+          _buildMiniSummaryCard(
+            title: 'Out',
+            value: _outOfStockCount().toString(),
+            icon: Icons.remove_circle_outline,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryCard({
+  Widget _buildMiniSummaryCard({
     required String title,
     required String value,
     required IconData icon,
   }) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: AppTheme.header,
-              size: 28,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
+      child: SizedBox(
+        width: 120,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 24,
+                color: AppTheme.header,
+              ),
+              const SizedBox(width: 8),
+              Column(
+                mainAxisAlignment:
+                MainAxisAlignment.center,
                 crossAxisAlignment:
                 CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
                     style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.header,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInventoryValueCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.account_balance_wallet_outlined,
-              color: AppTheme.action,
-              size: 30,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment:
-                CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Inventory Value',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'TZS ${_inventoryValue().toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.header,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  const Text(
-                    'Based on cost price',
-                    style: TextStyle(
                       fontSize: 11,
                       color: Colors.grey,
                     ),
                   ),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.header,
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -391,9 +333,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         16,
-        16,
-        16,
         8,
+        16,
+        4,
       ),
       child: TextField(
         controller: _searchController,
@@ -409,6 +351,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           )
               : null,
           border: const OutlineInputBorder(),
+          isDense: true,
         ),
       ),
     );
@@ -419,9 +362,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.fromLTRB(
         16,
-        8,
+        6,
         16,
-        8,
+        6,
       ),
       child: Row(
         children: [
@@ -456,6 +399,76 @@ class _InventoryScreenState extends State<InventoryScreen> {
             : AppTheme.header,
         fontWeight: FontWeight.w600,
       ),
+    );
+  }
+
+  Widget _buildItemList(List<Item> filteredItems) {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        4,
+        16,
+        100,
+      ),
+      itemCount: filteredItems.length,
+      itemBuilder: (context, index) {
+        final item = filteredItems[index];
+
+        final status = _stockStatus(item);
+        final statusColor =
+        _stockStatusColor(item);
+
+        return Card(
+          margin:
+          const EdgeInsets.only(bottom: 10),
+          child: ListTile(
+            contentPadding:
+            const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 4,
+            ),
+            onTap: () {
+              _openItemDetails(item);
+            },
+            leading: const CircleAvatar(
+              backgroundColor: AppTheme.header,
+              child: Icon(
+                Icons.inventory_2_outlined,
+                color: Colors.white,
+              ),
+            ),
+            title: Text(
+              item.name,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.header,
+              ),
+            ),
+            subtitle: Padding(
+              padding:
+              const EdgeInsets.only(top: 4),
+              child: Text(
+                '${item.category} • '
+                    'Stock: '
+                    '${item.stockQuantity.toStringAsFixed(0)} • '
+                    '$status',
+                style: TextStyle(
+                  color: statusColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            trailing: Text(
+              'TZS ${item.unitPrice.toStringAsFixed(0)}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.action,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -529,79 +542,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildItemList(List<Item> filteredItems) {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        8,
-        16,
-        100,
-      ),
-      itemCount: filteredItems.length,
-      itemBuilder: (context, index) {
-        final item = filteredItems[index];
-
-        final status = _stockStatus(item);
-        final statusColor =
-        _stockStatusColor(item);
-
-        return Card(
-          margin:
-          const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            onTap: () {
-              _openItemDetails(item);
-            },
-            leading: const CircleAvatar(
-              backgroundColor: AppTheme.header,
-              child: Icon(
-                Icons.inventory_2_outlined,
-                color: Colors.white,
-              ),
-            ),
-            title: Text(
-              item.name,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.header,
-              ),
-            ),
-            subtitle: Padding(
-              padding:
-              const EdgeInsets.only(top: 6),
-              child: Column(
-                crossAxisAlignment:
-                CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${item.category} • '
-                        'Stock: '
-                        '${item.stockQuantity.toStringAsFixed(0)}',
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    status,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: statusColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            trailing: Text(
-              'TZS ${item.unitPrice.toStringAsFixed(0)}',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.action,
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
