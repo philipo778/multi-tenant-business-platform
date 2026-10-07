@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../businesses/domain/entities/business.dart';
 import '../../domain/entities/item.dart';
+import 'edit_item_screen.dart';
 
 class ItemDetailsScreen extends StatelessWidget {
   final Business business;
@@ -17,6 +18,7 @@ class ItemDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isProduct = item.tracksInventory;
+
     final bool isLowStock =
         isProduct &&
             item.stockQuantity <= item.reorderThreshold;
@@ -24,11 +26,47 @@ class ItemDetailsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Item Details'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () async {
+                  final updatedItem = await Navigator.push<Item>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditItemScreen(
+                        business: business,
+                        item: item,
+                      ),
+                    ),
+                  );
+
+                  if (updatedItem != null &&
+                      context.mounted) {
+                    Navigator.pop(context, updatedItem);
+                  }
+                },
+                child: const SizedBox(
+                  width: 42,
+                  height: 42,
+                  child: Icon(
+                    Icons.edit_outlined,
+                    color: AppTheme.header,
+                    size: 21,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Item Header
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -71,7 +109,6 @@ class ItemDetailsScreen extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Business Information
           _sectionTitle('Business Information'),
 
           Card(
@@ -98,7 +135,6 @@ class ItemDetailsScreen extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Item Information
           _sectionTitle('Item Information'),
 
           Card(
@@ -136,14 +172,14 @@ class ItemDetailsScreen extends StatelessWidget {
                   _infoTile(
                     icon: Icons.inventory_2_outlined,
                     title: 'Current Stock',
-                    value: item.stockQuantity
-                        .toStringAsFixed(0),
+                    value:
+                    item.stockQuantity.toStringAsFixed(0),
                   ),
                   _infoTile(
                     icon: Icons.warning_amber_outlined,
                     title: 'Reorder Threshold',
-                    value: item.reorderThreshold
-                        .toStringAsFixed(0),
+                    value:
+                    item.reorderThreshold.toStringAsFixed(0),
                   ),
                   _infoTile(
                     icon: isLowStock
