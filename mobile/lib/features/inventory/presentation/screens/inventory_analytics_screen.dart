@@ -49,8 +49,7 @@ class InventoryAnalyticsScreen extends StatelessWidget {
         .fold(
       0,
           (total, item) =>
-      total +
-          (item.stockQuantity * item.costPrice),
+      total + (item.stockQuantity * item.costPrice),
     );
   }
 
@@ -60,8 +59,7 @@ class InventoryAnalyticsScreen extends StatelessWidget {
         .fold(
       0,
           (total, item) =>
-      total +
-          (item.stockQuantity * item.unitPrice),
+      total + (item.stockQuantity * item.unitPrice),
     );
   }
 
@@ -92,34 +90,27 @@ class InventoryAnalyticsScreen extends StatelessWidget {
           32,
         ),
         child: Column(
-          crossAxisAlignment:
-          CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildOverviewSection(),
 
             const SizedBox(height: 24),
 
-            _buildSectionTitle(
-              'Inventory Value',
-            ),
+            _buildSectionTitle('Inventory Value'),
             const SizedBox(height: 10),
 
             _buildValueCards(),
 
             const SizedBox(height: 24),
 
-            _buildSectionTitle(
-              'Stock Status',
-            ),
+            _buildSectionTitle('Stock Status'),
             const SizedBox(height: 10),
 
             _buildStockStatus(),
 
             const SizedBox(height: 24),
 
-            _buildSectionTitle(
-              'Key Insights',
-            ),
+            _buildSectionTitle('Key Insights'),
             const SizedBox(height: 10),
 
             _buildKeyInsights(),
@@ -131,8 +122,7 @@ class InventoryAnalyticsScreen extends StatelessWidget {
 
   Widget _buildOverviewSection() {
     return Column(
-      crossAxisAlignment:
-      CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           'Inventory Overview',
@@ -150,33 +140,33 @@ class InventoryAnalyticsScreen extends StatelessWidget {
             fontSize: 13,
           ),
         ),
-        const SizedBox(height: 14),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics:
-          const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.65,
-          children: [
-            _buildOverviewCard(
-              value: totalItems.toString(),
-              label: 'Total Items',
-            ),
-            _buildOverviewCard(
-              value: productCount.toString(),
-              label: 'Products',
-            ),
-            _buildOverviewCard(
-              value: serviceCount.toString(),
-              label: 'Services',
-            ),
-            _buildOverviewCard(
-              value: itemsNeedingRestock.toString(),
-              label: 'Need Restock',
-            ),
-          ],
+        const SizedBox(height: 16),
+
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildOverviewCard(
+                value: totalItems.toString(),
+                label: 'Total Items',
+              ),
+              const SizedBox(width: 12),
+              _buildOverviewCard(
+                value: productCount.toString(),
+                label: 'Products',
+              ),
+              const SizedBox(width: 12),
+              _buildOverviewCard(
+                value: serviceCount.toString(),
+                label: 'Services',
+              ),
+              const SizedBox(width: 12),
+              _buildOverviewCard(
+                value: itemsNeedingRestock.toString(),
+                label: 'Low Stock',
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -187,33 +177,46 @@ class InventoryAnalyticsScreen extends StatelessWidget {
     required String label,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: 110,
+      height: 110,
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppTheme.background,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: AppTheme.border,
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.05,
+            ),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
-        mainAxisAlignment:
-        MainAxisAlignment.center,
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             value,
             style: const TextStyle(
-              fontSize: 24,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
               color: AppTheme.header,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
               color: Colors.grey,
             ),
           ),
@@ -228,8 +231,7 @@ class InventoryAnalyticsScreen extends StatelessWidget {
         _buildValueCard(
           title: 'Inventory Cost Value',
           value: inventoryCostValue,
-          description:
-          'Estimated cost of current stock.',
+          description: 'Estimated cost of current stock.',
           valueColor: AppTheme.header,
         ),
         const SizedBox(height: 12),
@@ -246,7 +248,8 @@ class InventoryAnalyticsScreen extends StatelessWidget {
           value: potentialProfit,
           description:
           'Estimated profit from current stock.',
-          valueColor: potentialProfit >= 0
+          valueColor:
+          potentialProfit >= 0
               ? AppTheme.header
               : Colors.red,
         ),
@@ -271,8 +274,7 @@ class InventoryAnalyticsScreen extends StatelessWidget {
         ),
       ),
       child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
@@ -411,8 +413,7 @@ class InventoryAnalyticsScreen extends StatelessWidget {
         ),
       ),
       child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
@@ -459,8 +460,7 @@ class InventoryAnalyticsScreen extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment:
-          MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const SizedBox(height: 100),
             const Text(
