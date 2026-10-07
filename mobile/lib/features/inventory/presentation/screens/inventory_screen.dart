@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../businesses/domain/entities/business.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/usecases/delete_item.dart';
 import '../../domain/usecases/get_items.dart';
@@ -12,7 +11,7 @@ import 'item_details_screen.dart';
 import 'low_stock_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
-  final Business business;
+  final dynamic business;
 
   const InventoryScreen({
     super.key,
@@ -24,15 +23,10 @@ class InventoryScreen extends StatefulWidget {
 }
 
 class _InventoryScreenState extends State<InventoryScreen> {
-  final GetItems _getItems = getIt<GetItems>();
-  final DeleteItem _deleteItem = getIt<DeleteItem>();
+  late Future<List<Item>> _itemsFuture;
 
-  List<Item> items = [];
-
-  bool isLoading = true;
-
-  String searchQuery = '';
-  String selectedFilter = 'All';
+  String _searchQuery = '';
+  String _selectedFilter = 'All';
 
   @override
   void initState() {
@@ -40,73 +34,65 @@ class _InventoryScreenState extends State<InventoryScreen> {
     _loadItems();
   }
 
-  Future<void> _loadItems() async {
-    setState(() {
-      isLoading = true;
-    });
-
-    final result = await _getItems(widget.business.id);
-
-    if (!mounted) return;
-
-    setState(() {
-      items = result;
-      isLoading = false;
-    });
+  void _loadItems() {
+    _itemsFuture = getIt<GetItems>()(
+      widget.business.id,
+    );
   }
 
-  List<Item> get filteredItems {
+  Future<void> _refreshItems() async {
+    setState(() {
+      _loadItems();
+    });
+
+    await _itemsFuture;
+  }
+
+  List<Item> _filterItems(List<Item> items) {
+    final query = _searchQuery.trim().toLowerCase();
+
     return items.where((item) {
-      final query = searchQuery.trim().toLowerCase();
+      final matchesSearch =
+          query.isEmpty ||
+              item.name.toLowerCase().contains(query) ||
+              item.category.toLowerCase().contains(query);
 
-      final matchesSearch = query.isEmpty ||
-          item.name.toLowerCase().contains(query) ||
-          item.category.toLowerCase().contains(query);
-
-      bool matchesFilter = true;
-
-      switch (selectedFilter) {
-        case 'Products':
-          matchesFilter = item.tracksInventory;
-          break;
-
-        case 'Services':
-          matchesFilter = !item.tracksInventory;
-          break;
-
-        case 'Low Stock':
-          matchesFilter = item.tracksInventory &&
-              item.stockQuantity > 0 &&
-              item.stockQuantity <= item.reorderThreshold;
-          break;
-
-        case 'Out of Stock':
-          matchesFilter =
-              item.tracksInventory && item.stockQuantity <= 0;
-          break;
-
-        case 'All':
-          matchesFilter = true;
-          break;
+      if (!matchesSearch) {
+        return false;
       }
 
-      return matchesSearch && matchesFilter;
+      switch (_selectedFilter) {
+        case 'Products':
+          return item.tracksInventory;
+
+        case 'Services':
+          return !item.tracksInventory;
+
+        case 'Low Stock':
+          return item.tracksInventory &&
+              item.stockQuantity > 0 &&
+              item.stockQuantity <= item.reorderThreshold;
+
+        case 'Out of Stock':
+          return item.tracksInventory &&
+              item.stockQuantity <= 0;
+
+        case 'All':
+        default:
+          return true;
+      }
     }).toList();
   }
 
-  int get totalItems {
-    return items.length;
-  }
-
-  int get productCount {
+  int _productCount(List<Item> items) {
     return items.where((item) => item.tracksInventory).length;
   }
 
-  int get serviceCount {
+  int _serviceCount(List<Item> items) {
     return items.where((item) => !item.tracksInventory).length;
   }
 
-  int get lowStockCount {
+  int _lowStockCount(List<Item> items) {
     return items.where((item) {
       return item.tracksInventory &&
           item.stockQuantity > 0 &&
@@ -114,24 +100,29 @@ class _InventoryScreenState extends State<InventoryScreen> {
     }).length;
   }
 
-  int get outOfStockCount {
+  int _outOfStockCount(List<Item> items) {
     return items.where((item) {
-      return item.tracksInventory && item.stockQuantity <= 0;
+      return item.tracksInventory &&
+          item.stockQuantity <= 0;
     }).length;
   }
 
   Future<void> _openAddItem() async {
-    final result = await Navigator.push(
+    final result = await Navigator.push<dynamic>(
       context,
       MaterialPageRoute(
-        builder: (context) => AddItemScreen(
+        builder: (_) => AddItemScreen(
           business: widget.business,
         ),
       ),
     );
 
-    if (result != null) {
-      await _loadItems();
+    if (!mounted) {
+      return;
+    }
+
+    if (result is Item) {
+      _refreshItems();
     }
   }
 
@@ -139,44 +130,23 @@ class _InventoryScreenState extends State<InventoryScreen> {
     final result = await Navigator.push<dynamic>(
       context,
       MaterialPageRoute(
-        builder: (context) => ItemDetailsScreen(
+        builder: (_) => ItemDetailsScreen(
           business: widget.business,
           item: item,
         ),
       ),
     );
 
-    if (result != null) {
-      await _loadItems();
+    if (!mounted) {
+      return;
+    }
+
+    if (result == true || result is Item) {
+      _refreshItems();
     }
   }
 
-  Future<void> _openAnalytics() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => InventoryAnalyticsScreen(
-          items: items,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openLowStock() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LowStockScreen(
-          business: widget.business,
-          items: items,
-        ),
-      ),
-    );
-
-    await _loadItems();
-  }
-
-  Future<void> _deleteSelectedItem(Item item) async {
+  Future<void> _deleteItem(Item item) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -192,10 +162,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
               },
               child: const Text('Cancel'),
             ),
-            FilledButton(
+            ElevatedButton(
               onPressed: () {
                 Navigator.pop(context, true);
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
               child: const Text('Delete'),
             ),
           ],
@@ -203,176 +177,228 @@ class _InventoryScreenState extends State<InventoryScreen> {
       },
     );
 
-    if (shouldDelete != true) return;
+    if (shouldDelete != true) {
+      return;
+    }
 
-    await _deleteItem(
+    await getIt<DeleteItem>()(
       widget.business.id,
       item.id,
     );
 
-    if (!mounted) return;
-
-    await _loadItems();
-
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Item deleted successfully'),
       ),
     );
+
+    _refreshItems();
+  }
+
+  Future<void> _openLowStock() async {
+    final result = await Navigator.push<dynamic>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LowStockScreen(
+          business: widget.business,
+        ),
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (result == true || result is Item) {
+      _refreshItems();
+    } else {
+      _refreshItems();
+    }
+  }
+
+  Future<void> _openAnalytics(List<Item> items) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InventoryAnalyticsScreen(
+          items: items,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final visibleItems = filteredItems;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Inventory'),
         actions: [
-          if (lowStockCount > 0 || outOfStockCount > 0)
-            IconButton(
-              onPressed: _openLowStock,
-              icon: const Icon(
-                Icons.warning_amber_outlined,
-              ),
-              tooltip: 'Low Stock',
-            ),
-          IconButton(
-            onPressed: _openAnalytics,
-            icon: const Icon(
-              Icons.analytics_outlined,
-            ),
-            tooltip: 'Analytics',
+          FutureBuilder<List<Item>>(
+            future: _itemsFuture,
+            builder: (context, snapshot) {
+              final items = snapshot.data ?? [];
+              final lowStockCount = _lowStockCount(items);
+              final outOfStockCount = _outOfStockCount(items);
+
+              if (lowStockCount == 0 && outOfStockCount == 0) {
+                return const SizedBox.shrink();
+              }
+
+              return IconButton(
+                onPressed: _openLowStock,
+                tooltip: 'Low Stock',
+                icon: const Icon(
+                  Icons.warning_amber_rounded,
+                ),
+              );
+            },
+          ),
+          FutureBuilder<List<Item>>(
+            future: _itemsFuture,
+            builder: (context, snapshot) {
+              final items = snapshot.data ?? [];
+
+              return IconButton(
+                onPressed: items.isEmpty
+                    ? null
+                    : () => _openAnalytics(items),
+                tooltip: 'Analytics',
+                icon: const Icon(
+                  Icons.analytics_outlined,
+                ),
+              );
+            },
           ),
           IconButton(
             onPressed: _openAddItem,
-            icon: const Icon(Icons.add),
             tooltip: 'Add Item',
+            icon: const Icon(
+              Icons.add,
+            ),
           ),
         ],
       ),
-      body: isLoading
-          ? const Center(
-        child: CircularProgressIndicator(),
-      )
-          : RefreshIndicator(
-        onRefresh: _loadItems,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            16,
-            12,
-            16,
-            90,
-          ),
-          children: [
-            _buildBusinessHeader(),
-
-            const SizedBox(height: 16),
-
-            _buildCompactSummary(),
-
-            const SizedBox(height: 18),
-
-            _buildSearchField(),
-
-            const SizedBox(height: 12),
-
-            _buildFilterChips(),
-
-            const SizedBox(height: 18),
-
-            if (visibleItems.isEmpty)
-              _buildEmptyState()
-            else
-              _buildItemsList(visibleItems),
-          ],
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openAddItem,
+        backgroundColor: AppTheme.action,
+        foregroundColor: Colors.white,
         child: const Icon(Icons.add),
+      ),
+      body: FutureBuilder<List<Item>>(
+        future: _itemsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState ==
+              ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return _buildErrorState();
+          }
+
+          final items = snapshot.data ?? [];
+
+          if (items.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          final filteredItems = _filterItems(items);
+
+          return RefreshIndicator(
+            onRefresh: _refreshItems,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                100,
+              ),
+              children: [
+                _buildBusinessHeader(),
+                const SizedBox(height: 16),
+                _buildSummary(items),
+                const SizedBox(height: 16),
+                _buildSearch(),
+                const SizedBox(height: 12),
+                _buildFilters(items),
+                const SizedBox(height: 16),
+                if (filteredItems.isEmpty)
+                  _buildNoResults()
+                else
+                  ...filteredItems.map(
+                        (item) => Padding(
+                      padding: const EdgeInsets.only(
+                        bottom: 10,
+                      ),
+                      child: _buildItemCard(item),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
   Widget _buildBusinessHeader() {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.business.name,
-                style: const TextStyle(
-                  fontSize: 21,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.header,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                '${widget.business.category} • '
-                    '${widget.business.subCategory}',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Text(
-          '$totalItems items',
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.header,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCompactSummary() {
     return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.header,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-          Expanded(
-            child: _buildSummaryValue(
-              value: totalItems.toString(),
-              label: 'Items',
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(
+                alpha: 0.12,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.storefront_outlined,
+              color: Colors.white,
             ),
           ),
-          _buildSummaryDivider(),
+          const SizedBox(width: 12),
           Expanded(
-            child: _buildSummaryValue(
-              value: productCount.toString(),
-              label: 'Products',
-            ),
-          ),
-          _buildSummaryDivider(),
-          Expanded(
-            child: _buildSummaryValue(
-              value: serviceCount.toString(),
-              label: 'Services',
-            ),
-          ),
-          _buildSummaryDivider(),
-          Expanded(
-            child: _buildSummaryValue(
-              value: lowStockCount.toString(),
-              label: 'Low Stock',
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.business.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.business.subCategory,
+                  style: TextStyle(
+                    color: Colors.white.withValues(
+                      alpha: 0.75,
+                    ),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -380,73 +406,137 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  Widget _buildSummaryValue({
-    required String value,
-    required String label,
-  }) {
-    return Column(
+  Widget _buildSummary(List<Item> items) {
+    final products = _productCount(items);
+    final services = _serviceCount(items);
+    final lowStock = _lowStockCount(items);
+    final outOfStock = _outOfStockCount(items);
+
+    return Row(
       children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+        Expanded(
+          child: _buildSummaryCard(
+            value: items.length.toString(),
+            label: 'Total',
           ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 11,
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildSummaryCard(
+            value: products.toString(),
+            label: 'Products',
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildSummaryCard(
+            value: services.toString(),
+            label: 'Services',
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildSummaryCard(
+            value: (lowStock + outOfStock).toString(),
+            label: 'Alerts',
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSummaryDivider() {
+  Widget _buildSummaryCard({
+    required String value,
+    required String label,
+  }) {
     return Container(
-      width: 1,
-      height: 32,
-      color: Colors.white24,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: AppTheme.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.border,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.header,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 10,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildSearchField() {
+  Widget _buildSearch() {
     return TextField(
       onChanged: (value) {
         setState(() {
-          searchQuery = value;
+          _searchQuery = value;
         });
       },
       decoration: InputDecoration(
-        hintText: 'Search inventory...',
-        prefixIcon: const Icon(Icons.search),
-        suffixIcon: searchQuery.isNotEmpty
-            ? IconButton(
+        hintText: 'Search items...',
+        prefixIcon: const Icon(
+          Icons.search,
+        ),
+        suffixIcon: _searchQuery.isEmpty
+            ? null
+            : IconButton(
           onPressed: () {
             setState(() {
-              searchQuery = '';
+              _searchQuery = '';
             });
           },
-          icon: const Icon(Icons.clear),
-        )
-            : null,
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 12,
+          icon: const Icon(
+            Icons.clear,
+          ),
         ),
+        filled: true,
+        fillColor: AppTheme.background,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: AppTheme.border,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: AppTheme.border,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: AppTheme.header,
+            width: 1.5,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFilterChips() {
-    const filters = [
+  Widget _buildFilters(List<Item> items) {
+    final filters = [
       'All',
       'Products',
       'Services',
@@ -458,18 +548,33 @@ class _InventoryScreenState extends State<InventoryScreen> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: filters.map((filter) {
-          final isSelected = selectedFilter == filter;
+          final selected =
+              _selectedFilter == filter;
 
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(
+              right: 8,
+            ),
             child: ChoiceChip(
               label: Text(filter),
-              selected: isSelected,
+              selected: selected,
               onSelected: (_) {
                 setState(() {
-                  selectedFilter = filter;
+                  _selectedFilter = filter;
                 });
               },
+              selectedColor: AppTheme.header,
+              backgroundColor: AppTheme.background,
+              side: const BorderSide(
+                color: AppTheme.border,
+              ),
+              labelStyle: TextStyle(
+                color: selected
+                    ? Colors.white
+                    : AppTheme.header,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
             ),
           );
         }).toList(),
@@ -477,191 +582,238 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  Widget _buildItemsList(List<Item> visibleItems) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment:
-          MainAxisAlignment.spaceBetween,
+  Widget _buildItemCard(Item item) {
+    final isLowStock =
+        item.tracksInventory &&
+            item.stockQuantity > 0 &&
+            item.stockQuantity <=
+                item.reorderThreshold;
+
+    final isOutOfStock =
+        item.tracksInventory &&
+            item.stockQuantity <= 0;
+
+    return InkWell(
+      onTap: () => _openItemDetails(item),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppTheme.background,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: AppTheme.border,
+          ),
+        ),
+        child: Row(
           children: [
-            const Text(
-              'Items',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: AppTheme.header.withValues(
+                  alpha: 0.08,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                item.tracksInventory
+                    ? Icons.inventory_2_outlined
+                    : Icons.miscellaneous_services_outlined,
                 color: AppTheme.header,
               ),
             ),
-            Text(
-              '${visibleItems.length} shown',
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: AppTheme.border,
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: [
-              for (int index = 0;
-              index < visibleItems.length;
-              index++) ...[
-                _buildCompactItem(
-                  visibleItems[index],
-                ),
-                if (index != visibleItems.length - 1)
-                  const Divider(
-                    height: 1,
-                    indent: 16,
-                    endIndent: 16,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.header,
+                    ),
                   ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCompactItem(Item item) {
-    final bool isOutOfStock =
-        item.tracksInventory && item.stockQuantity <= 0;
-
-    final bool isLowStock =
-        item.tracksInventory &&
-            item.stockQuantity > 0 &&
-            item.stockQuantity <= item.reorderThreshold;
-
-    final Color statusColor = isOutOfStock
-        ? Colors.red
-        : isLowStock
-        ? AppTheme.action
-        : AppTheme.header;
-
-    return Material(
-      color: AppTheme.background,
-      child: InkWell(
-        onTap: () {
-          _openItemDetails(item);
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
-                  children: [
+                  const SizedBox(height: 4),
+                  Text(
+                    item.category,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  if (item.tracksInventory)
                     Text(
-                      item.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      'Stock: ${item.stockQuantity.toStringAsFixed(0)}  •  TZS ${item.unitPrice.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isOutOfStock
+                            ? Colors.red
+                            : isLowStock
+                            ? AppTheme.action
+                            : AppTheme.header,
+                      ),
+                    )
+                  else
+                    Text(
+                      'Service  •  TZS ${item.unitPrice.toStringAsFixed(0)}',
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.header,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.category,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
-              const SizedBox(width: 12),
-              if (item.tracksInventory)
-                Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Stock ${item.stockQuantity.toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: statusColor,
-                      ),
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'delete') {
+                  _deleteItem(item);
+                }
+              },
+              itemBuilder: (context) {
+                return const [
+                  PopupMenuItem<String>(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                        ),
+                        SizedBox(width: 8),
+                        Text('Delete'),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'TZS ${item.unitPrice.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.action,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                )
-              else
-                const Text(
-                  'Service',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
                   ),
-                ),
-              const SizedBox(width: 4),
-              PopupMenuButton<String>(
-                padding: EdgeInsets.zero,
-                onSelected: (value) {
-                  if (value == 'delete') {
-                    _deleteSelectedItem(item);
-                  }
-                },
-                itemBuilder: (context) {
-                  return const [
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Delete'),
-                    ),
-                  ];
-                },
-              ),
-            ],
-          ),
+                ];
+              },
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    final hasSearch =
-        searchQuery.trim().isNotEmpty;
+    return RefreshIndicator(
+      onRefresh: _refreshItems,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height:
+            MediaQuery.of(context).size.height *
+                0.28,
+          ),
+          const Icon(
+            Icons.inventory_2_outlined,
+            size: 70,
+            color: AppTheme.header,
+          ),
+          const SizedBox(height: 16),
+          const Center(
+            child: Text(
+              'No Inventory Items',
+              style: TextStyle(
+                fontSize: 21,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.header,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 32,
+            ),
+            child: Text(
+              'Start adding products or services to manage your inventory.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: _openAddItem,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Item'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.header,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    final hasFilter =
-        selectedFilter != 'All';
+  Widget _buildNoResults() {
+    return Padding(
+      padding: const EdgeInsets.only(
+        top: 60,
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 58,
+            color: AppTheme.header.withValues(
+              alpha: 0.45,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'No Matching Items',
+            style: TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.header,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Try changing your search or filter.',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    if (hasSearch || hasFilter) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: 60,
-        ),
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
+            const Icon(
+              Icons.error_outline,
+              size: 60,
+              color: Colors.red,
+            ),
+            const SizedBox(height: 12),
             const Text(
-              'No items found',
+              'Unable to Load Inventory',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -670,45 +822,23 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Try another search or filter.',
+              'Something went wrong while loading your inventory.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.grey,
               ),
             ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _loadItems();
+                });
+              },
+              child: const Text('Try Again'),
+            ),
           ],
         ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 60,
-      ),
-      child: Column(
-        children: [
-          const Text(
-            'No inventory items',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.header,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Add your first product or service.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 18),
-          FilledButton(
-            onPressed: _openAddItem,
-            child: const Text('Add Item'),
-          ),
-        ],
       ),
     );
   }
