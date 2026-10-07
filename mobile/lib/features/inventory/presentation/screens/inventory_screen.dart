@@ -22,13 +22,16 @@ class InventoryScreen extends StatefulWidget {
 
 class _InventoryScreenState extends State<InventoryScreen> {
   final GetItems _getItems = getIt<GetItems>();
+
   final TextEditingController _searchController =
   TextEditingController();
 
   List<Item> items = [];
+
   bool isLoading = true;
 
   String _selectedFilter = 'All';
+
   String _searchQuery = '';
 
   @override
@@ -37,7 +40,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
     _searchController.addListener(() {
       setState(() {
-        _searchQuery = _searchController.text.trim().toLowerCase();
+        _searchQuery =
+            _searchController.text.trim().toLowerCase();
       });
     });
 
@@ -116,21 +120,55 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return AppTheme.header;
   }
 
+  int _inStockCount() {
+    return items.where((item) {
+      return item.stockQuantity > item.reorderThreshold;
+    }).length;
+  }
+
+  int _lowStockCount() {
+    return items.where((item) {
+      return item.stockQuantity > 0 &&
+          item.stockQuantity <= item.reorderThreshold;
+    }).length;
+  }
+
+  int _outOfStockCount() {
+    return items.where((item) {
+      return item.stockQuantity <= 0;
+    }).length;
+  }
+
+  double _inventoryValue() {
+    return items.fold(
+      0,
+          (total, item) {
+        if (!item.tracksInventory) {
+          return total;
+        }
+
+        return total +
+            (item.stockQuantity * item.costPrice);
+      },
+    );
+  }
+
   List<Item> _filteredItems() {
     Iterable<Item> result = items;
 
-    // Stock filter
     switch (_selectedFilter) {
       case 'In Stock':
         result = result.where((item) {
-          return item.stockQuantity > item.reorderThreshold;
+          return item.stockQuantity >
+              item.reorderThreshold;
         });
         break;
 
       case 'Low Stock':
         result = result.where((item) {
           return item.stockQuantity > 0 &&
-              item.stockQuantity <= item.reorderThreshold;
+              item.stockQuantity <=
+                  item.reorderThreshold;
         });
         break;
 
@@ -141,11 +179,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
         break;
     }
 
-    // Search filter
     if (_searchQuery.isNotEmpty) {
       result = result.where((item) {
         final name = item.name.toLowerCase();
-        final category = item.category.toLowerCase();
+        final category =
+        item.category.toLowerCase();
 
         return name.contains(_searchQuery) ||
             category.contains(_searchQuery);
@@ -178,18 +216,173 @@ class _InventoryScreenState extends State<InventoryScreen> {
           ? _buildEmptyState()
           : Column(
         children: [
+          _buildSummary(),
           _buildSearchField(),
           _buildFilterBar(),
           Expanded(
             child: filteredItems.isEmpty
                 ? _buildNoResults()
-                : _buildItemList(filteredItems),
+                : _buildItemList(
+              filteredItems,
+            ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openAddItem,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildSummary() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        0,
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildSummaryCard(
+                  title: 'Total',
+                  value: items.length.toString(),
+                  icon: Icons.inventory_2_outlined,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildSummaryCard(
+                  title: 'In Stock',
+                  value: _inStockCount().toString(),
+                  icon: Icons.check_circle_outline,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSummaryCard(
+                  title: 'Low Stock',
+                  value: _lowStockCount().toString(),
+                  icon: Icons.warning_amber_outlined,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildSummaryCard(
+                  title: 'Out of Stock',
+                  value: _outOfStockCount().toString(),
+                  icon: Icons.remove_circle_outline,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _buildInventoryValueCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard({
+    required String title,
+    required String value,
+    required IconData icon,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: AppTheme.header,
+              size: 28,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.header,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInventoryValueCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.account_balance_wallet_outlined,
+              color: AppTheme.action,
+              size: 30,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Inventory Value',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'TZS ${_inventoryValue().toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.header,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Based on cost price',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -245,7 +438,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   Widget _buildFilterButton(String filter) {
-    final isSelected = _selectedFilter == filter;
+    final isSelected =
+        _selectedFilter == filter;
 
     return ChoiceChip(
       label: Text(filter),
@@ -270,7 +464,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+          MainAxisAlignment.center,
           children: [
             const Icon(
               Icons.inventory_2_outlined,
@@ -309,7 +504,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+          MainAxisAlignment.center,
           children: [
             const Icon(
               Icons.search_off,
@@ -349,10 +545,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
         final item = filteredItems[index];
 
         final status = _stockStatus(item);
-        final statusColor = _stockStatusColor(item);
+        final statusColor =
+        _stockStatusColor(item);
 
         return Card(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin:
+          const EdgeInsets.only(bottom: 12),
           child: ListTile(
             onTap: () {
               _openItemDetails(item);
@@ -372,7 +570,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
               ),
             ),
             subtitle: Padding(
-              padding: const EdgeInsets.only(top: 6),
+              padding:
+              const EdgeInsets.only(top: 6),
               child: Column(
                 crossAxisAlignment:
                 CrossAxisAlignment.start,
