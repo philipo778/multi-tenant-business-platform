@@ -11,7 +11,7 @@ import '../../features/businesses/domain/usecases/get_business_by_id.dart';
 import '../../features/businesses/domain/usecases/get_businesses.dart';
 import '../../features/businesses/domain/usecases/update_business.dart';
 
-// Inventory
+// Inventory - Items
 import '../../features/inventory/data/datasources/item_local_data_source.dart';
 import '../../features/inventory/data/datasources/item_local_data_source_impl.dart';
 import '../../features/inventory/data/repositories/item_repository_impl.dart';
@@ -22,12 +22,21 @@ import '../../features/inventory/domain/usecases/get_item_by_id.dart';
 import '../../features/inventory/domain/usecases/get_items.dart';
 import '../../features/inventory/domain/usecases/update_item.dart';
 
+// Inventory - Stock Movements
+import '../../features/inventory/data/datasources/stock_movement_local_data_source.dart';
+import '../../features/inventory/data/datasources/stock_movement_local_data_source_impl.dart';
+import '../../features/inventory/data/repositories/stock_movement_repository_impl.dart';
+import '../../features/inventory/domain/repositories/stock_movement_repository.dart';
+import '../../features/inventory/domain/usecases/create_stock_movement.dart';
+import '../../features/inventory/domain/usecases/get_item_stock_movements.dart';
+import '../../features/inventory/domain/usecases/get_stock_movements.dart';
+
 final getIt = GetIt.instance;
 
 void setupDependencies() {
-  // =========================
-  // Businesses
-  // =========================
+  // ============================================================
+  // BUSINESSES
+  // ============================================================
 
   getIt.registerLazySingleton<BusinessLocalDataSource>(
         () => BusinessLocalDataSourceImpl(),
@@ -69,9 +78,9 @@ void setupDependencies() {
     ),
   );
 
-  // =========================
-  // Inventory
-  // =========================
+  // ============================================================
+  // INVENTORY - ITEMS
+  // ============================================================
 
   getIt.registerLazySingleton<ItemLocalDataSource>(
         () => ItemLocalDataSourceImpl(),
@@ -110,6 +119,38 @@ void setupDependencies() {
   getIt.registerLazySingleton<DeleteItem>(
         () => DeleteItem(
       getIt<ItemRepository>(),
+    ),
+  );
+
+  // ============================================================
+  // INVENTORY - STOCK MOVEMENTS
+  // ============================================================
+
+  getIt.registerLazySingleton<StockMovementLocalDataSource>(
+        () => StockMovementLocalDataSourceImpl(),
+  );
+
+  getIt.registerLazySingleton<StockMovementRepository>(
+        () => StockMovementRepositoryImpl(
+      getIt<StockMovementLocalDataSource>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<CreateStockMovement>(
+        () => CreateStockMovement(
+      getIt<StockMovementRepository>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<GetStockMovements>(
+        () => GetStockMovements(
+      getIt<StockMovementRepository>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<GetItemStockMovements>(
+        () => GetItemStockMovements(
+      getIt<StockMovementRepository>(),
     ),
   );
 }

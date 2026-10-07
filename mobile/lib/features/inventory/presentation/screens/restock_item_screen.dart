@@ -4,6 +4,8 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../businesses/domain/entities/business.dart';
 import '../../domain/entities/item.dart';
+import '../../domain/entities/stock_movement.dart';
+import '../../domain/usecases/create_stock_movement.dart';
 import '../../domain/usecases/update_item.dart';
 
 class RestockItemScreen extends StatefulWidget {
@@ -17,7 +19,8 @@ class RestockItemScreen extends StatefulWidget {
   });
 
   @override
-  State<RestockItemScreen> createState() => _RestockItemScreenState();
+  State<RestockItemScreen> createState() =>
+      _RestockItemScreenState();
 }
 
 class _RestockItemScreenState extends State<RestockItemScreen> {
@@ -48,6 +51,9 @@ class _RestockItemScreenState extends State<RestockItemScreen> {
       _isSaving = true;
     });
 
+    final stockBefore = widget.item.stockQuantity;
+    final stockAfter = stockBefore + quantity;
+
     final updatedItem = Item(
       id: widget.item.id,
       businessId: widget.item.businessId,
@@ -56,18 +62,36 @@ class _RestockItemScreenState extends State<RestockItemScreen> {
       tracksInventory: widget.item.tracksInventory,
       unitPrice: widget.item.unitPrice,
       costPrice: widget.item.costPrice,
-      stockQuantity: widget.item.stockQuantity + quantity,
+      stockQuantity: stockAfter,
       reorderThreshold: widget.item.reorderThreshold,
     );
 
+    final movement = StockMovement(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      businessId: widget.item.businessId,
+      itemId: widget.item.id,
+      type: 'RESTOCK',
+      quantity: quantity,
+      reason: 'Restock',
+      stockBefore: stockBefore,
+      stockAfter: stockAfter,
+      createdAt: DateTime.now(),
+    );
+
     try {
+      // 1. Update current stock
       await getIt<UpdateItem>()(updatedItem);
+
+      // 2. Record stock movement
+      await getIt<CreateStockMovement>()(movement);
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Item restocked successfully'),
+          content: Text(
+            'Item restocked successfully',
+          ),
         ),
       );
 
@@ -81,7 +105,9 @@ class _RestockItemScreenState extends State<RestockItemScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to restock item: $e'),
+          content: Text(
+            'Failed to restock item: $e',
+          ),
         ),
       );
     }
@@ -129,9 +155,7 @@ class _RestockItemScreenState extends State<RestockItemScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 24),
-
           TextField(
             controller: _quantityController,
             keyboardType: const TextInputType.numberWithOptions(
@@ -146,9 +170,7 @@ class _RestockItemScreenState extends State<RestockItemScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 24),
-
           SizedBox(
             height: 50,
             child: FilledButton.icon(
@@ -164,7 +186,9 @@ class _RestockItemScreenState extends State<RestockItemScreen> {
               )
                   : const Icon(Icons.add),
               label: Text(
-                _isSaving ? 'Restocking...' : 'Restock Item',
+                _isSaving
+                    ? 'Restocking...'
+                    : 'Restock Item',
               ),
             ),
           ),

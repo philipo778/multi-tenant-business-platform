@@ -7,6 +7,8 @@ import '../../domain/entities/item.dart';
 import '../../domain/usecases/delete_item.dart';
 import 'edit_item_screen.dart';
 import 'restock_item_screen.dart';
+import 'stock_adjustment_screen.dart';
+
 
 
 class ItemDetailsScreen extends StatelessWidget {
@@ -304,6 +306,34 @@ class ItemDetailsScreen extends StatelessWidget {
               ),
             ),
 
+            const SizedBox(height: 12),
+
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final updatedItem = await Navigator.push<Item>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => StockAdjustmentScreen(
+                        business: business,
+                        item: item,
+                      ),
+                    ),
+                  );
+
+                  if (updatedItem != null && context.mounted) {
+                    Navigator.pop(
+                      context,
+                      updatedItem,
+                    );
+                  }
+                },
+                icon: const Icon(Icons.tune_outlined),
+                label: const Text('Adjust Stock'),
+              ),
+            ),
           ],
         ],
       ),
