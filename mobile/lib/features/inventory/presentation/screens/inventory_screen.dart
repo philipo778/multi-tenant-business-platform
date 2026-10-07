@@ -6,6 +6,7 @@ import '../../../businesses/domain/entities/business.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/usecases/get_items.dart';
 import 'add_item_screen.dart';
+import 'inventory_analytics_screen.dart';
 import 'item_details_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
@@ -79,6 +80,17 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
 
     await _loadItems();
+  }
+
+  Future<void> _openAnalytics() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => InventoryAnalyticsScreen(
+          items: items,
+        ),
+      ),
+    );
   }
 
   Future<void> _openItemDetails(Item item) async {
@@ -185,8 +197,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     if (_searchQuery.isNotEmpty) {
       result = result.where((item) {
         final name = item.name.toLowerCase();
-        final category =
-        item.category.toLowerCase();
+        final category = item.category.toLowerCase();
 
         return name.contains(_searchQuery) ||
             category.contains(_searchQuery);
@@ -204,6 +215,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
       appBar: AppBar(
         title: const Text('Inventory'),
         actions: [
+          IconButton(
+            onPressed: _openAnalytics,
+            icon: const Icon(
+              Icons.analytics_outlined,
+            ),
+            tooltip: 'Inventory Analytics',
+          ),
           IconButton(
             onPressed: _openAddItem,
             icon: const Icon(Icons.add),
