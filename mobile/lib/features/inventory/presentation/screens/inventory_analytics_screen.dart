@@ -13,48 +13,55 @@ class InventoryAnalyticsScreen extends StatelessWidget {
 
   int get totalItems => items.length;
 
+  int get productCount {
+    return items.where((item) => item.tracksInventory).length;
+  }
+
+  int get serviceCount {
+    return items.where((item) => !item.tracksInventory).length;
+  }
+
   int get inStockCount {
     return items.where((item) {
-      return item.stockQuantity > item.reorderThreshold;
+      return item.tracksInventory &&
+          item.stockQuantity > item.reorderThreshold;
     }).length;
   }
 
   int get lowStockCount {
     return items.where((item) {
-      return item.stockQuantity > 0 &&
+      return item.tracksInventory &&
+          item.stockQuantity > 0 &&
           item.stockQuantity <= item.reorderThreshold;
     }).length;
   }
 
   int get outOfStockCount {
     return items.where((item) {
-      return item.stockQuantity <= 0;
+      return item.tracksInventory &&
+          item.stockQuantity <= 0;
     }).length;
   }
 
   double get inventoryCostValue {
-    return items.fold(
+    return items
+        .where((item) => item.tracksInventory)
+        .fold(
       0,
-          (total, item) {
-        if (!item.tracksInventory) {
-          return total;
-        }
-
-        return total + (item.stockQuantity * item.costPrice);
-      },
+          (total, item) =>
+      total +
+          (item.stockQuantity * item.costPrice),
     );
   }
 
   double get potentialSalesValue {
-    return items.fold(
+    return items
+        .where((item) => item.tracksInventory)
+        .fold(
       0,
-          (total, item) {
-        if (!item.tracksInventory) {
-          return total;
-        }
-
-        return total + (item.stockQuantity * item.unitPrice);
-      },
+          (total, item) =>
+      total +
+          (item.stockQuantity * item.unitPrice),
     );
   }
 
@@ -69,10 +76,6 @@ class InventoryAnalyticsScreen extends StatelessWidget {
     }).length;
   }
 
-  String _formatCurrency(double amount) {
-    return 'TZS ${amount.toStringAsFixed(0)}';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,231 +85,280 @@ class InventoryAnalyticsScreen extends StatelessWidget {
       body: items.isEmpty
           ? _buildEmptyState()
           : SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(
+          16,
+          12,
+          16,
+          32,
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+          CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle('Inventory Overview'),
-            const SizedBox(height: 12),
-            _buildOverviewGrid(),
+            _buildOverviewSection(),
+
             const SizedBox(height: 24),
-            _buildSectionTitle('Inventory Value'),
-            const SizedBox(height: 12),
-            _buildValueCard(
-              title: 'Inventory Cost Value',
-              value: _formatCurrency(inventoryCostValue),
-              icon: Icons.inventory_2_outlined,
+
+            _buildSectionTitle(
+              'Inventory Value',
             ),
             const SizedBox(height: 10),
-            _buildValueCard(
-              title: 'Potential Sales Value',
-              value: _formatCurrency(potentialSalesValue),
-              icon: Icons.point_of_sale_outlined,
+
+            _buildValueCards(),
+
+            const SizedBox(height: 24),
+
+            _buildSectionTitle(
+              'Stock Status',
             ),
             const SizedBox(height: 10),
-            _buildValueCard(
-              title: 'Potential Profit',
-              value: _formatCurrency(potentialProfit),
-              icon: Icons.trending_up_outlined,
-              valueColor: potentialProfit >= 0
-                  ? AppTheme.header
-                  : Colors.red,
+
+            _buildStockStatus(),
+
+            const SizedBox(height: 24),
+
+            _buildSectionTitle(
+              'Key Insights',
             ),
-            const SizedBox(height: 24),
-            _buildSectionTitle('Stock Status'),
-            const SizedBox(height: 12),
-            _buildStockStatusCard(),
-            const SizedBox(height: 24),
-            _buildSectionTitle('Key Insights'),
-            const SizedBox(height: 12),
-            _buildInsightsCard(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 10),
+
+            _buildKeyInsights(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: AppTheme.header,
-      ),
-    );
-  }
-
-  Widget _buildOverviewGrid() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 1.8,
+  Widget _buildOverviewSection() {
+    return Column(
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
       children: [
-        _buildStatCard(
-          title: 'Total Items',
-          value: totalItems.toString(),
-          icon: Icons.inventory_2_outlined,
+        const Text(
+          'Inventory Overview',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.header,
+          ),
         ),
-        _buildStatCard(
-          title: 'In Stock',
-          value: inStockCount.toString(),
-          icon: Icons.check_circle_outline,
+        const SizedBox(height: 6),
+        const Text(
+          'A quick summary of your current inventory.',
+          style: TextStyle(
+            color: Colors.grey,
+            fontSize: 13,
+          ),
         ),
-        _buildStatCard(
-          title: 'Low Stock',
-          value: lowStockCount.toString(),
-          icon: Icons.warning_amber_outlined,
-        ),
-        _buildStatCard(
-          title: 'Out of Stock',
-          value: outOfStockCount.toString(),
-          icon: Icons.remove_circle_outline,
+        const SizedBox(height: 14),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics:
+          const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.65,
+          children: [
+            _buildOverviewCard(
+              value: totalItems.toString(),
+              label: 'Total Items',
+            ),
+            _buildOverviewCard(
+              value: productCount.toString(),
+              label: 'Products',
+            ),
+            _buildOverviewCard(
+              value: serviceCount.toString(),
+              label: 'Services',
+            ),
+            _buildOverviewCard(
+              value: itemsNeedingRestock.toString(),
+              label: 'Need Restock',
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildStatCard({
-    required String title,
+  Widget _buildOverviewCard({
     required String value,
-    required IconData icon,
+    required String label,
   }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: AppTheme.header,
-              size: 28,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.header,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.border,
         ),
       ),
+      child: Column(
+        mainAxisAlignment:
+        MainAxisAlignment.center,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.header,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildValueCards() {
+    return Column(
+      children: [
+        _buildValueCard(
+          title: 'Inventory Cost Value',
+          value: inventoryCostValue,
+          description:
+          'Estimated cost of current stock.',
+          valueColor: AppTheme.header,
+        ),
+        const SizedBox(height: 12),
+        _buildValueCard(
+          title: 'Potential Sales Value',
+          value: potentialSalesValue,
+          description:
+          'Estimated revenue if current stock is sold.',
+          valueColor: AppTheme.action,
+        ),
+        const SizedBox(height: 12),
+        _buildValueCard(
+          title: 'Potential Profit',
+          value: potentialProfit,
+          description:
+          'Estimated profit from current stock.',
+          valueColor: potentialProfit >= 0
+              ? AppTheme.header
+              : Colors.red,
+        ),
+      ],
     );
   }
 
   Widget _buildValueCard({
     required String title,
-    required String value,
-    required IconData icon,
-    Color? valueColor,
+    required double value,
+    required String description,
+    required Color valueColor,
   }) {
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: AppTheme.header,
-          child: Icon(
-            icon,
-            color: Colors.white,
-          ),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        trailing: Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: valueColor ?? AppTheme.action,
-          ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.border,
         ),
       ),
-    );
-  }
-
-  Widget _buildStockStatusCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildStatusRow(
-              'In Stock',
-              inStockCount,
-              AppTheme.header,
-              Icons.check_circle_outline,
-            ),
-            const Divider(height: 24),
-            _buildStatusRow(
-              'Low Stock',
-              lowStockCount,
-              AppTheme.action,
-              Icons.warning_amber_outlined,
-            ),
-            const Divider(height: 24),
-            _buildStatusRow(
-              'Out of Stock',
-              outOfStockCount,
-              Colors.red,
-              Icons.remove_circle_outline,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusRow(
-      String title,
-      int count,
-      Color color,
-      IconData icon,
-      ) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          color: color,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
+      child: Column(
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
+        children: [
+          Text(
             title,
             style: const TextStyle(
+              fontSize: 14,
               fontWeight: FontWeight.w600,
+              color: AppTheme.header,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'TZS ${value.toStringAsFixed(0)}',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: valueColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStockStatus() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.border,
+        ),
+      ),
+      child: Column(
+        children: [
+          _buildStatusRow(
+            label: 'In Stock',
+            value: inStockCount,
+            color: AppTheme.header,
+          ),
+          const Divider(height: 24),
+          _buildStatusRow(
+            label: 'Low Stock',
+            value: lowStockCount,
+            color: AppTheme.action,
+          ),
+          const Divider(height: 24),
+          _buildStatusRow(
+            label: 'Out of Stock',
+            value: outOfStockCount,
+            color: Colors.red,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusRow({
+    required String label,
+    required int value,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.grey,
             ),
           ),
         ),
         Text(
-          count.toString(),
+          value.toString(),
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -315,55 +367,90 @@ class InventoryAnalyticsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInsightsCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildInsight(
-              icon: Icons.warning_amber_outlined,
-              text: itemsNeedingRestock > 0
-                  ? '$itemsNeedingRestock item(s) need restocking.'
-                  : 'No items currently need restocking.',
-            ),
-            const SizedBox(height: 14),
-            _buildInsight(
-              icon: Icons.remove_circle_outline,
-              text: outOfStockCount > 0
-                  ? '$outOfStockCount item(s) are out of stock.'
-                  : 'No items are currently out of stock.',
-            ),
-            const SizedBox(height: 14),
-            _buildInsight(
-              icon: Icons.trending_up_outlined,
-              text:
-              'Potential inventory profit is '
-                  '${_formatCurrency(potentialProfit)}.',
-            ),
-          ],
+  Widget _buildKeyInsights() {
+    return Column(
+      children: [
+        _buildInsightCard(
+          title: 'Products',
+          value: '$productCount products',
+          description:
+          '$productCount items are currently tracked as products.',
         ),
+        const SizedBox(height: 10),
+        _buildInsightCard(
+          title: 'Restocking',
+          value: '$itemsNeedingRestock items',
+          description:
+          'These items are at or below their reorder threshold.',
+        ),
+        const SizedBox(height: 10),
+        _buildInsightCard(
+          title: 'Potential Profit',
+          value:
+          'TZS ${potentialProfit.toStringAsFixed(0)}',
+          description:
+          'Estimated profit based on current stock and prices.',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInsightCard({
+    required String title,
+    required String value,
+    required String description,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.header,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildInsight({
-    required IconData icon,
-    required String text,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          icon,
-          color: AppTheme.action,
-          size: 22,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(text),
-        ),
-      ],
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.bold,
+        color: AppTheme.header,
+      ),
     );
   }
 
@@ -372,18 +459,14 @@ class InventoryAnalyticsScreen extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+          MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.analytics_outlined,
-              size: 64,
-              color: AppTheme.action,
-            ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 100),
             const Text(
               'No Inventory Data',
               style: TextStyle(
-                fontSize: 22,
+                fontSize: 21,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.header,
               ),
@@ -392,6 +475,9 @@ class InventoryAnalyticsScreen extends StatelessWidget {
             const Text(
               'Add inventory items to see analytics.',
               textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey,
+              ),
             ),
           ],
         ),
