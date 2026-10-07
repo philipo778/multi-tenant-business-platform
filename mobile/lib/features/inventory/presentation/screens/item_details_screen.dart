@@ -10,8 +10,6 @@ import 'restock_item_screen.dart';
 import 'stock_adjustment_screen.dart';
 import 'stock_movement_history_screen.dart';
 
-
-
 class ItemDetailsScreen extends StatelessWidget {
   final Business business;
   final Item item;
@@ -22,385 +20,419 @@ class ItemDetailsScreen extends StatelessWidget {
     required this.item,
   });
 
+  Future<void> _deleteItem(BuildContext context) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete Item'),
+          content: Text(
+            'Are you sure you want to delete "${item.name}"?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true || !context.mounted) {
+      return;
+    }
+
+    await getIt<DeleteItem>()(
+      business.id,
+      item.id,
+    );
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Item deleted successfully'),
+      ),
+    );
+
+    Navigator.pop(context, true);
+  }
+
+  Future<void> _editItem(BuildContext context) async {
+    final updatedItem = await Navigator.push<Item>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditItemScreen(
+          business: business,
+          item: item,
+        ),
+      ),
+    );
+
+    if (updatedItem != null && context.mounted) {
+      Navigator.pop(context, updatedItem);
+    }
+  }
+
+  Future<void> _restockItem(BuildContext context) async {
+    final updatedItem = await Navigator.push<Item>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RestockItemScreen(
+          business: business,
+          item: item,
+        ),
+      ),
+    );
+
+    if (updatedItem != null && context.mounted) {
+      Navigator.pop(context, updatedItem);
+    }
+  }
+
+  Future<void> _adjustStock(BuildContext context) async {
+    final updatedItem = await Navigator.push<Item>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StockAdjustmentScreen(
+          business: business,
+          item: item,
+        ),
+      ),
+    );
+
+    if (updatedItem != null && context.mounted) {
+      Navigator.pop(context, updatedItem);
+    }
+  }
+
+  void _openStockHistory(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StockMovementHistoryScreen(
+          business: business,
+          item: item,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bool isProduct = item.tracksInventory;
+    final profitPerUnit = item.unitPrice - item.costPrice;
 
-    final bool isLowStock =
-        isProduct &&
-            item.stockQuantity <= item.reorderThreshold;
+    final profitMargin = item.unitPrice == 0
+        ? 0.0
+        : (profitPerUnit / item.unitPrice) * 100;
+
+    final potentialStockProfit =
+        item.stockQuantity * profitPerUnit;
+
+    final profitColor = profitPerUnit >= 0
+        ? AppTheme.header
+        : Colors.red;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Item Details'),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Material(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () async {
-                  final updatedItem =
-                  await Navigator.push<Item>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditItemScreen(
-                        business: business,
-                        item: item,
-                      ),
-                    ),
-                  );
-
-                  if (updatedItem != null &&
-                      context.mounted) {
-                    Navigator.pop(
-                      context,
-                      updatedItem,
-                    );
-                  }
-                },
-                child: const SizedBox(
-                  width: 42,
-                  height: 42,
-                  child: Icon(
-                    Icons.edit_outlined,
-                    color: AppTheme.header,
-                    size: 21,
-                  ),
-                ),
-              ),
-            ),
+          IconButton(
+            onPressed: () => _editItem(context),
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Edit Item',
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Material(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () async {
-                  final shouldDelete = await showDialog<bool>(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        title: const Text('Delete Item'),
-                        content: Text(
-                          'Are you sure you want to delete '
-                              '"${item.name}"?',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context, false);
-                            },
-                            child: const Text('Cancel'),
-                          ),
-                          FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Colors.red,
-                            ),
-                            onPressed: () {
-                              Navigator.pop(context, true);
-                            },
-                            child: const Text('Delete'),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-
-                  if (shouldDelete != true || !context.mounted) {
-                    return;
-                  }
-
-                  try {
-                    await getIt<DeleteItem>()(
-                      business.id,
-                      item.id,
-                    );
-
-                    if (!context.mounted) return;
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Item deleted successfully'),
-                      ),
-                    );
-
-                    Navigator.pop(context, true);
-                  } catch (e) {
-                    if (!context.mounted) return;
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to delete item: $e'),
-                      ),
-                    );
-                  }
-                },
-                child: const SizedBox(
-                  width: 42,
-                  height: 42,
-                  child: Icon(
-                    Icons.delete_outline,
-                    color: Colors.red,
-                    size: 21,
-                  ),
-                ),
-              ),
-            ),
+          IconButton(
+            onPressed: () => _deleteItem(context),
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Delete Item',
           ),
         ],
       ),
-      body: ListView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 34,
-                    backgroundColor:
-                    AppTheme.header.withValues(alpha: 0.1),
-                    child: Icon(
-                      isProduct
-                          ? Icons.inventory_2_outlined
-                          : Icons.design_services_outlined,
-                      size: 34,
-                      color: AppTheme.header,
-                    ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 20),
+
+            _buildSectionTitle('Business Information'),
+            const SizedBox(height: 8),
+            _buildInfoCard([
+              _buildInfoRow(
+                'Business',
+                business.name,
+              ),
+              _buildInfoRow(
+                'Category',
+                business.category,
+              ),
+              _buildInfoRow(
+                'Subcategory',
+                business.subCategory,
+              ),
+              _buildInfoRow(
+                'Location',
+                business.location,
+              ),
+            ]),
+
+            const SizedBox(height: 20),
+
+            _buildSectionTitle('Item Information'),
+            const SizedBox(height: 8),
+            _buildInfoCard([
+              _buildInfoRow(
+                'Name',
+                item.name,
+              ),
+              _buildInfoRow(
+                'Type',
+                item.tracksInventory
+                    ? 'Product'
+                    : 'Service',
+              ),
+              _buildInfoRow(
+                'Category',
+                item.category,
+              ),
+            ]),
+
+            const SizedBox(height: 20),
+
+            _buildSectionTitle('Pricing Information'),
+            const SizedBox(height: 8),
+            _buildInfoCard([
+              _buildInfoRow(
+                'Selling Price',
+                'TZS ${item.unitPrice.toStringAsFixed(0)}',
+              ),
+              _buildInfoRow(
+                'Cost Price',
+                'TZS ${item.costPrice.toStringAsFixed(0)}',
+              ),
+              _buildInfoRow(
+                'Profit / Unit',
+                'TZS ${profitPerUnit.toStringAsFixed(0)}',
+                valueColor: profitColor,
+              ),
+              _buildInfoRow(
+                'Profit Margin',
+                '${profitMargin.toStringAsFixed(1)}%',
+                valueColor: profitColor,
+              ),
+            ]),
+
+            if (item.tracksInventory) ...[
+              const SizedBox(height: 20),
+
+              _buildSectionTitle('Inventory Information'),
+              const SizedBox(height: 8),
+              _buildInfoCard([
+                _buildInfoRow(
+                  'Current Stock',
+                  item.stockQuantity.toStringAsFixed(0),
+                ),
+                _buildInfoRow(
+                  'Reorder Threshold',
+                  item.reorderThreshold.toStringAsFixed(0),
+                ),
+                _buildInfoRow(
+                  'Potential Stock Profit',
+                  'TZS ${potentialStockProfit.toStringAsFixed(0)}',
+                  valueColor: profitColor,
+                ),
+              ]),
+
+              const SizedBox(height: 24),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: FilledButton.icon(
+                  onPressed: () => _restockItem(context),
+                  icon: const Icon(Icons.add_box_outlined),
+                  label: const Text('Restock Item'),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: () => _adjustStock(context),
+                  icon: const Icon(Icons.tune_outlined),
+                  label: const Text('Adjust Stock'),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: () => _openStockHistory(context),
+                  icon: const Icon(Icons.history_outlined),
+                  label: const Text('Stock History'),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 24),
+
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton.icon(
+                onPressed: () => _editItem(context),
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Edit Item'),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton.icon(
+                onPressed: () => _deleteItem(context),
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Delete Item'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(
+                    color: Colors.red,
                   ),
-                  const SizedBox(height: 16),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              radius: 30,
+              backgroundColor: AppTheme.header,
+              child: Icon(
+                Icons.inventory_2_outlined,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
                   Text(
                     item.name,
-                    textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.header,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
-                    item.category,
+                    item.tracksInventory
+                        ? 'Product'
+                        : 'Service',
                     style: const TextStyle(
-                      color: AppTheme.action,
-                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
                     ),
                   ),
                 ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _sectionTitle('Business Information'),
-          Card(
-            child: Column(
-              children: [
-                _infoTile(
-                  icon: Icons.business_outlined,
-                  title: 'Business',
-                  value: business.name,
-                ),
-                _infoTile(
-                  icon: Icons.category_outlined,
-                  title: 'Business Type',
-                  value: business.subCategory,
-                ),
-                _infoTile(
-                  icon: Icons.location_on_outlined,
-                  title: 'Location',
-                  value: business.location,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _sectionTitle('Item Information'),
-          Card(
-            child: Column(
-              children: [
-                _infoTile(
-                  icon: Icons.sell_outlined,
-                  title: 'Item Type',
-                  value: isProduct ? 'Product' : 'Service',
-                ),
-                _infoTile(
-                  icon: Icons.payments_outlined,
-                  title: 'Selling Price',
-                  value:
-                  'TZS ${item.unitPrice.toStringAsFixed(0)}',
-                ),
-                _infoTile(
-                  icon: Icons.shopping_cart_outlined,
-                  title: 'Cost Price',
-                  value:
-                  'TZS ${item.costPrice.toStringAsFixed(0)}',
-                ),
-              ],
-            ),
-          ),
-          if (isProduct) ...[
-            const SizedBox(height: 16),
-            _sectionTitle('Inventory Information'),
-            Card(
-              child: Column(
-                children: [
-                  _infoTile(
-                    icon: Icons.inventory_2_outlined,
-                    title: 'Current Stock',
-                    value:
-                    item.stockQuantity.toStringAsFixed(0),
-                  ),
-                  _infoTile(
-                    icon: Icons.warning_amber_outlined,
-                    title: 'Reorder Threshold',
-                    value:
-                    item.reorderThreshold.toStringAsFixed(0),
-                  ),
-                  _infoTile(
-                    icon: isLowStock
-                        ? Icons.warning_outlined
-                        : Icons.check_circle_outline,
-                    title: 'Stock Status',
-                    value: isLowStock
-                        ? 'Low Stock'
-                        : 'Stock Available',
-                    valueColor: isLowStock
-                        ? Colors.red
-                        : Colors.green,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: FilledButton.icon(
-                onPressed: () async {
-                  final updatedItem = await Navigator.push<Item>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => RestockItemScreen(
-                        business: business,
-                        item: item,
-                      ),
-                    ),
-                  );
-
-                  if (updatedItem != null && context.mounted) {
-                    Navigator.pop(
-                      context,
-                      updatedItem,
-                    );
-                  }
-                },
-                icon: const Icon(Icons.add_box_outlined),
-                label: const Text('Restock Item'),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  final updatedItem = await Navigator.push<Item>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => StockAdjustmentScreen(
-                        business: business,
-                        item: item,
-                      ),
-                    ),
-                  );
-
-                  if (updatedItem != null && context.mounted) {
-                    Navigator.pop(
-                      context,
-                      updatedItem,
-                    );
-                  }
-                },
-                icon: const Icon(Icons.tune_outlined),
-                label: const Text('Adjust Stock'),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => StockMovementHistoryScreen(
-                        business: business,
-                        item: item,
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.history_outlined),
-                label: const Text('Stock History'),
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
 
-  Widget _sectionTitle(String title) {
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: AppTheme.header,
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(List<Widget> children) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: children,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(
+      String label,
+      String value, {
+        Color? valueColor,
+      }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: AppTheme.header,
-        ),
+      padding: const EdgeInsets.symmetric(
+        vertical: 8,
       ),
-    );
-  }
-
-  Widget _infoTile({
-    required IconData icon,
-    required String title,
-    required String value,
-    Color? valueColor,
-  }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: AppTheme.action,
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 13,
-        ),
-      ),
-      trailing: Text(
-        value,
-        textAlign: TextAlign.end,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: valueColor ?? AppTheme.header,
-        ),
+      child: Row(
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: valueColor,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
