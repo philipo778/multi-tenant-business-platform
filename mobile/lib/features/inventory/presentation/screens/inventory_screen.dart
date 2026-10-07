@@ -57,9 +57,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   List<Item> get filteredItems {
     return items.where((item) {
-      final matchesSearch = item.name
-          .toLowerCase()
-          .contains(searchQuery.toLowerCase());
+      final query = searchQuery.trim().toLowerCase();
+
+      final matchesSearch = query.isEmpty ||
+          item.name.toLowerCase().contains(query) ||
+          item.category.toLowerCase().contains(query);
 
       bool matchesFilter = true;
 
@@ -74,6 +76,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
         case 'Low Stock':
           matchesFilter = item.tracksInventory &&
+              item.stockQuantity > 0 &&
               item.stockQuantity <= item.reorderThreshold;
           break;
 
@@ -106,6 +109,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   int get lowStockCount {
     return items.where((item) {
       return item.tracksInventory &&
+          item.stockQuantity > 0 &&
           item.stockQuantity <= item.reorderThreshold;
     }).length;
   }
@@ -227,19 +231,20 @@ class _InventoryScreenState extends State<InventoryScreen> {
       appBar: AppBar(
         title: const Text('Inventory'),
         actions: [
-          IconButton(
-            onPressed: _openLowStock,
-            icon: const Icon(
-              Icons.warning_amber_outlined,
+          if (lowStockCount > 0 || outOfStockCount > 0)
+            IconButton(
+              onPressed: _openLowStock,
+              icon: const Icon(
+                Icons.warning_amber_outlined,
+              ),
+              tooltip: 'Low Stock',
             ),
-            tooltip: 'Low Stock',
-          ),
           IconButton(
             onPressed: _openAnalytics,
             icon: const Icon(
               Icons.analytics_outlined,
             ),
-            tooltip: 'Inventory Analytics',
+            tooltip: 'Analytics',
           ),
           IconButton(
             onPressed: _openAddItem,
@@ -255,22 +260,33 @@ class _InventoryScreenState extends State<InventoryScreen> {
           : RefreshIndicator(
         onRefresh: _loadItems,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            90,
+          ),
           children: [
             _buildBusinessHeader(),
+
             const SizedBox(height: 16),
-            _buildSummaryCards(),
-            const SizedBox(height: 20),
+
+            _buildCompactSummary(),
+
+            const SizedBox(height: 18),
+
             _buildSearchField(),
+
             const SizedBox(height: 12),
+
             _buildFilterChips(),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 18),
+
             if (visibleItems.isEmpty)
               _buildEmptyState()
             else
-              ...visibleItems.map(
-                    (item) => _buildItemCard(item),
-              ),
+              _buildItemsList(visibleItems),
           ],
         ),
       ),
@@ -282,149 +298,120 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   Widget _buildBusinessHeader() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: AppTheme.header,
-              child: const Icon(
-                Icons.storefront_outlined,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.business.name,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.header,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${widget.business.category} • '
-                        '${widget.business.subCategory}',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.business.location,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSummaryCards() {
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildSummaryCard(
-                title: 'Total Items',
-                value: totalItems.toString(),
-                icon: Icons.inventory_2_outlined,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.business.name,
+                style: const TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.header,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildSummaryCard(
-                title: 'Products',
-                value: productCount.toString(),
-                icon: Icons.shopping_bag_outlined,
+              const SizedBox(height: 3),
+              Text(
+                '${widget.business.category} • '
+                    '${widget.business.subCategory}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildSummaryCard(
-                title: 'Services',
-                value: serviceCount.toString(),
-                icon: Icons.miscellaneous_services_outlined,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildSummaryCard(
-                title: 'Low Stock',
-                value: lowStockCount.toString(),
-                icon: Icons.warning_amber_outlined,
-              ),
-            ),
-          ],
+        Text(
+          '$totalItems items',
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.header,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildSummaryCard({
-    required String title,
-    required String value,
-    required IconData icon,
-  }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: AppTheme.header,
-              child: Icon(
-                icon,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment:
-                CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.header,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+  Widget _buildCompactSummary() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.header,
+        borderRadius: BorderRadius.circular(12),
       ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 14,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildSummaryValue(
+              value: totalItems.toString(),
+              label: 'Items',
+            ),
+          ),
+          _buildSummaryDivider(),
+          Expanded(
+            child: _buildSummaryValue(
+              value: productCount.toString(),
+              label: 'Products',
+            ),
+          ),
+          _buildSummaryDivider(),
+          Expanded(
+            child: _buildSummaryValue(
+              value: serviceCount.toString(),
+              label: 'Services',
+            ),
+          ),
+          _buildSummaryDivider(),
+          Expanded(
+            child: _buildSummaryValue(
+              value: lowStockCount.toString(),
+              label: 'Low Stock',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryValue({
+    required String value,
+    required String label,
+  }) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryDivider() {
+    return Container(
+      width: 1,
+      height: 32,
+      color: Colors.white24,
     );
   }
 
@@ -436,7 +423,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
         });
       },
       decoration: InputDecoration(
-        hintText: 'Search items...',
+        hintText: 'Search inventory...',
         prefixIcon: const Icon(Icons.search),
         suffixIcon: searchQuery.isNotEmpty
             ? IconButton(
@@ -448,15 +435,18 @@ class _InventoryScreenState extends State<InventoryScreen> {
           icon: const Icon(Icons.clear),
         )
             : null,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
         ),
       ),
     );
   }
 
   Widget _buildFilterChips() {
-    final filters = [
+    const filters = [
       'All',
       'Products',
       'Services',
@@ -468,12 +458,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: filters.map((filter) {
-          final isSelected =
-              selectedFilter == filter;
+          final isSelected = selectedFilter == filter;
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
+            child: ChoiceChip(
               label: Text(filter),
               selected: isSelected,
               onSelected: (_) {
@@ -488,215 +477,171 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  Widget _buildItemCard(Item item) {
-    final isLowStock = item.tracksInventory &&
-        item.stockQuantity <= item.reorderThreshold;
+  Widget _buildItemsList(List<Item> visibleItems) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment:
+          MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Items',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.header,
+              ),
+            ),
+            Text(
+              '${visibleItems.length} shown',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: AppTheme.border,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              for (int index = 0;
+              index < visibleItems.length;
+              index++) ...[
+                _buildCompactItem(
+                  visibleItems[index],
+                ),
+                if (index != visibleItems.length - 1)
+                  const Divider(
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
-    final isOutOfStock = item.tracksInventory &&
-        item.stockQuantity <= 0;
+  Widget _buildCompactItem(Item item) {
+    final bool isOutOfStock =
+        item.tracksInventory && item.stockQuantity <= 0;
 
-    final statusColor = isOutOfStock
+    final bool isLowStock =
+        item.tracksInventory &&
+            item.stockQuantity > 0 &&
+            item.stockQuantity <= item.reorderThreshold;
+
+    final Color statusColor = isOutOfStock
         ? Colors.red
         : isLowStock
         ? AppTheme.action
         : AppTheme.header;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+    return Material(
+      color: AppTheme.background,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
         onTap: () {
           _openItemDetails(item);
         },
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment:
-            CrossAxisAlignment.start,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: statusColor,
-                    child: Icon(
-                      item.tracksInventory
-                          ? Icons.inventory_2_outlined
-                          : Icons.miscellaneous_services_outlined,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.name,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.header,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item.category,
-                          style: const TextStyle(
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'delete') {
-                        _deleteSelectedItem(item);
-                      }
-                    },
-                    itemBuilder: (context) {
-                      return const [
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
-                              ),
-                              SizedBox(width: 8),
-                              Text('Delete'),
-                            ],
-                          ),
-                        ),
-                      ];
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 12),
-              if (item.tracksInventory) ...[
-                Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Current Stock',
-                      style: TextStyle(
-                        color: Colors.grey,
-                      ),
-                    ),
                     Text(
-                      item.stockQuantity.toStringAsFixed(0),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Reorder At',
-                      style: TextStyle(
-                        color: Colors.grey,
-                      ),
-                    ),
-                    Text(
-                      item.reorderThreshold.toStringAsFixed(0),
+                      item.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.header,
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.category,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
-              ],
-              Row(
-                mainAxisAlignment:
-                MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Selling Price',
-                    style: TextStyle(
-                      color: Colors.grey,
-                    ),
-                  ),
-                  Text(
-                    'TZS ${item.unitPrice.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.action,
-                    ),
-                  ),
-                ],
               ),
-              if (item.tracksInventory) ...[
-                const SizedBox(height: 12),
-                _buildStockStatus(
-                  item,
-                  statusColor,
+              const SizedBox(width: 12),
+              if (item.tracksInventory)
+                Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Stock ${item.stockQuantity.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'TZS ${item.unitPrice.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.action,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                const Text(
+                  'Service',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
                 ),
-              ],
+              const SizedBox(width: 4),
+              PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                onSelected: (value) {
+                  if (value == 'delete') {
+                    _deleteSelectedItem(item);
+                  }
+                },
+                itemBuilder: (context) {
+                  return const [
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
+                  ];
+                },
+              ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildStockStatus(
-      Item item,
-      Color statusColor,
-      ) {
-    String text;
-
-    if (item.stockQuantity <= 0) {
-      text = 'Out of Stock';
-    } else if (item.stockQuantity <=
-        item.reorderThreshold) {
-      text = 'Low Stock';
-    } else {
-      text = 'Stock Healthy';
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 8,
-      ),
-      decoration: BoxDecoration(
-        color: statusColor.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            item.stockQuantity <= item.reorderThreshold
-                ? Icons.warning_amber_outlined
-                : Icons.check_circle_outline,
-            size: 18,
-            color: statusColor,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: TextStyle(
-              color: statusColor,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -715,16 +660,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
         ),
         child: Column(
           children: [
-            const Icon(
-              Icons.search_off_outlined,
-              size: 64,
-              color: AppTheme.action,
-            ),
-            const SizedBox(height: 20),
             const Text(
-              'No Items Found',
+              'No items found',
               style: TextStyle(
-                fontSize: 22,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.header,
               ),
@@ -733,6 +672,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
             const Text(
               'Try another search or filter.',
               textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey,
+              ),
             ),
           ],
         ),
@@ -745,34 +687,29 @@ class _InventoryScreenState extends State<InventoryScreen> {
       ),
       child: Column(
         children: [
-          const Icon(
-            Icons.inventory_2_outlined,
-            size: 64,
-            color: AppTheme.action,
-          ),
-          const SizedBox(height: 20),
           const Text(
-            'No Inventory Items',
+            'No inventory items',
             style: TextStyle(
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: AppTheme.header,
             ),
           ),
           const SizedBox(height: 8),
           const Text(
-            'Start by adding your first product or service.',
+            'Add your first product or service.',
             textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey,
+            ),
           ),
-          const SizedBox(height: 20),
-          FilledButton.icon(
+          const SizedBox(height: 18),
+          FilledButton(
             onPressed: _openAddItem,
-            icon: const Icon(Icons.add),
-            label: const Text('Add Item'),
+            child: const Text('Add Item'),
           ),
         ],
       ),
     );
   }
-
 }
