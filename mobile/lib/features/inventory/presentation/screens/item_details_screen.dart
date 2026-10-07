@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../businesses/domain/entities/business.dart';
 import '../../domain/entities/item.dart';
+import '../../domain/usecases/delete_item.dart';
 import 'edit_item_screen.dart';
+
 
 class ItemDetailsScreen extends StatelessWidget {
   final Business business;
@@ -28,14 +31,15 @@ class ItemDetailsScreen extends StatelessWidget {
         title: const Text('Item Details'),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 8),
             child: Material(
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
                 onTap: () async {
-                  final updatedItem = await Navigator.push<Item>(
+                  final updatedItem =
+                  await Navigator.push<Item>(
                     context,
                     MaterialPageRoute(
                       builder: (context) => EditItemScreen(
@@ -47,7 +51,10 @@ class ItemDetailsScreen extends StatelessWidget {
 
                   if (updatedItem != null &&
                       context.mounted) {
-                    Navigator.pop(context, updatedItem);
+                    Navigator.pop(
+                      context,
+                      updatedItem,
+                    );
                   }
                 },
                 child: const SizedBox(
@@ -56,6 +63,85 @@ class ItemDetailsScreen extends StatelessWidget {
                   child: Icon(
                     Icons.edit_outlined,
                     color: AppTheme.header,
+                    size: 21,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () async {
+                  final shouldDelete = await showDialog<bool>(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: const Text('Delete Item'),
+                        content: Text(
+                          'Are you sure you want to delete '
+                              '"${item.name}"?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context, false);
+                            },
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
+                            onPressed: () {
+                              Navigator.pop(context, true);
+                            },
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+
+                  if (shouldDelete != true || !context.mounted) {
+                    return;
+                  }
+
+                  try {
+                    await getIt<DeleteItem>()(
+                      business.id,
+                      item.id,
+                    );
+
+                    if (!context.mounted) return;
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Item deleted successfully'),
+                      ),
+                    );
+
+                    Navigator.pop(context, true);
+                  } catch (e) {
+                    if (!context.mounted) return;
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to delete item: $e'),
+                      ),
+                    );
+                  }
+                },
+                child: const SizedBox(
+                  width: 42,
+                  height: 42,
+                  child: Icon(
+                    Icons.delete_outline,
+                    color: Colors.red,
                     size: 21,
                   ),
                 ),
@@ -106,11 +192,8 @@ class ItemDetailsScreen extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 16),
-
           _sectionTitle('Business Information'),
-
           Card(
             child: Column(
               children: [
@@ -132,11 +215,8 @@ class ItemDetailsScreen extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(height: 16),
-
           _sectionTitle('Item Information'),
-
           Card(
             child: Column(
               children: [
@@ -160,12 +240,9 @@ class ItemDetailsScreen extends StatelessWidget {
               ],
             ),
           ),
-
           if (isProduct) ...[
             const SizedBox(height: 16),
-
             _sectionTitle('Inventory Information'),
-
             Card(
               child: Column(
                 children: [

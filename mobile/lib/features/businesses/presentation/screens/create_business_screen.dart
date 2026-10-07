@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/di/injection.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../domain/business_module_config.dart';
 import '../../domain/entities/business.dart';
 import '../../domain/usecases/create_business.dart';

@@ -59,7 +59,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   Future<void> _openItemDetails(Item item) async {
-    final updatedItem = await Navigator.push<Item>(
+    final result = await Navigator.push<dynamic>(
       context,
       MaterialPageRoute(
         builder: (context) => ItemDetailsScreen(
@@ -69,7 +69,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       ),
     );
 
-    if (updatedItem != null && mounted) {
+    if (result != null && mounted) {
       await _loadItems();
     }
   }
