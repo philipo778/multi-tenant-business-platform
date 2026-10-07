@@ -142,31 +142,36 @@ class InventoryAnalyticsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildOverviewCard(
+        Row(
+          children: [
+            Expanded(
+              child: _buildOverviewCard(
                 value: totalItems.toString(),
-                label: 'Total Items',
+                label: 'Items',
               ),
-              const SizedBox(width: 12),
-              _buildOverviewCard(
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildOverviewCard(
                 value: productCount.toString(),
                 label: 'Products',
               ),
-              const SizedBox(width: 12),
-              _buildOverviewCard(
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildOverviewCard(
                 value: serviceCount.toString(),
                 label: 'Services',
               ),
-              const SizedBox(width: 12),
-              _buildOverviewCard(
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildOverviewCard(
                 value: itemsNeedingRestock.toString(),
                 label: 'Low Stock',
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
@@ -177,12 +182,11 @@ class InventoryAnalyticsScreen extends StatelessWidget {
     required String label,
   }) {
     return Container(
-      width: 110,
-      height: 110,
-      padding: const EdgeInsets.all(18),
+      height: 90,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
       decoration: BoxDecoration(
         color: AppTheme.background,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: AppTheme.border,
           width: 1,
@@ -192,30 +196,30 @@ class InventoryAnalyticsScreen extends StatelessWidget {
             color: Colors.black.withValues(
               alpha: 0.05,
             ),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             value,
             style: const TextStyle(
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: AppTheme.header,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             label,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: 11,
               fontWeight: FontWeight.w500,
               color: Colors.grey,
             ),
@@ -272,6 +276,15 @@ class InventoryAnalyticsScreen extends StatelessWidget {
         border: Border.all(
           color: AppTheme.border,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.04,
+            ),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,6 +329,15 @@ class InventoryAnalyticsScreen extends StatelessWidget {
         border: Border.all(
           color: AppTheme.border,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.04,
+            ),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -411,6 +433,15 @@ class InventoryAnalyticsScreen extends StatelessWidget {
         border: Border.all(
           color: AppTheme.border,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.04,
+            ),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
