@@ -74,6 +74,30 @@ class _InventoryScreenState extends State<InventoryScreen> {
     }
   }
 
+  String _stockStatus(Item item) {
+    if (item.stockQuantity <= 0) {
+      return 'Out of Stock';
+    }
+
+    if (item.stockQuantity <= item.reorderThreshold) {
+      return 'Low Stock';
+    }
+
+    return 'In Stock';
+  }
+
+  Color _stockStatusColor(Item item) {
+    if (item.stockQuantity <= 0) {
+      return Colors.red;
+    }
+
+    if (item.stockQuantity <= item.reorderThreshold) {
+      return AppTheme.action;
+    }
+
+    return AppTheme.header;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,15 +171,18 @@ class _InventoryScreenState extends State<InventoryScreen> {
       itemBuilder: (context, index) {
         final item = items[index];
 
+        final status = _stockStatus(item);
+        final statusColor = _stockStatusColor(item);
+
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             onTap: () {
               _openItemDetails(item);
             },
-            leading: const CircleAvatar(
+            leading: CircleAvatar(
               backgroundColor: AppTheme.header,
-              child: Icon(
+              child: const Icon(
                 Icons.inventory_2_outlined,
                 color: Colors.white,
               ),
@@ -167,9 +194,25 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 color: AppTheme.header,
               ),
             ),
-            subtitle: Text(
-              '${item.category} • '
-                  'Stock: ${item.stockQuantity}',
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${item.category} • '
+                        'Stock: ${item.stockQuantity.toStringAsFixed(0)}',
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    status,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
+                  ),
+                ],
+              ),
             ),
             trailing: Text(
               'TZS ${item.unitPrice.toStringAsFixed(0)}',
