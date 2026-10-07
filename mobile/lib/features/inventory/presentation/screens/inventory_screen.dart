@@ -26,6 +26,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
   List<Item> items = [];
   bool isLoading = true;
 
+  String _selectedFilter = 'All';
+
   @override
   void initState() {
     super.initState();
@@ -98,8 +100,33 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return AppTheme.header;
   }
 
+  List<Item> _filteredItems() {
+    switch (_selectedFilter) {
+      case 'In Stock':
+        return items.where((item) {
+          return item.stockQuantity > item.reorderThreshold;
+        }).toList();
+
+      case 'Low Stock':
+        return items.where((item) {
+          return item.stockQuantity > 0 &&
+              item.stockQuantity <= item.reorderThreshold;
+        }).toList();
+
+      case 'Out of Stock':
+        return items.where((item) {
+          return item.stockQuantity <= 0;
+        }).toList();
+
+      default:
+        return items;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final filteredItems = _filteredItems();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Inventory'),
@@ -117,10 +144,61 @@ class _InventoryScreenState extends State<InventoryScreen> {
       )
           : items.isEmpty
           ? _buildEmptyState()
-          : _buildItemList(),
+          : Column(
+        children: [
+          _buildFilterBar(),
+          Expanded(
+            child: filteredItems.isEmpty
+                ? _buildNoFilterResults()
+                : _buildItemList(filteredItems),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openAddItem,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        8,
+      ),
+      child: Row(
+        children: [
+          _buildFilterButton('All'),
+          const SizedBox(width: 8),
+          _buildFilterButton('In Stock'),
+          const SizedBox(width: 8),
+          _buildFilterButton('Low Stock'),
+          const SizedBox(width: 8),
+          _buildFilterButton('Out of Stock'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterButton(String filter) {
+    final isSelected = _selectedFilter == filter;
+
+    return ChoiceChip(
+      label: Text(filter),
+      selected: isSelected,
+      onSelected: (_) {
+        setState(() {
+          _selectedFilter = filter;
+        });
+      },
+      selectedColor: AppTheme.header,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : AppTheme.header,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
@@ -164,12 +242,49 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  Widget _buildItemList() {
+  Widget _buildNoFilterResults() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.filter_list_off,
+              size: 56,
+              color: AppTheme.action,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No $_selectedFilter items',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.header,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'There are no items matching this filter.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemList(List<Item> filteredItems) {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: items.length,
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        8,
+        16,
+        100,
+      ),
+      itemCount: filteredItems.length,
       itemBuilder: (context, index) {
-        final item = items[index];
+        final item = filteredItems[index];
 
         final status = _stockStatus(item);
         final statusColor = _stockStatusColor(item);
