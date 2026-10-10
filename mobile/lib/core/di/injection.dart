@@ -1,3 +1,4 @@
+
 import 'package:get_it/get_it.dart';
 
 // Businesses
@@ -30,6 +31,15 @@ import '../../features/inventory/domain/repositories/stock_movement_repository.d
 import '../../features/inventory/domain/usecases/create_stock_movement.dart';
 import '../../features/inventory/domain/usecases/get_item_stock_movements.dart';
 import '../../features/inventory/domain/usecases/get_stock_movements.dart';
+
+// Sales
+import '../../features/sales/data/datasources/local_sale_data_source.dart';
+import '../../features/sales/data/repositories/sale_repository_impl.dart';
+import '../../features/sales/domain/repositories/sale_repository.dart';
+import '../../features/sales/domain/usecases/create_sale.dart';
+import '../../features/sales/domain/usecases/delete_sale.dart';
+import '../../features/sales/domain/usecases/get_sale_by_id.dart';
+import '../../features/sales/domain/usecases/get_sales.dart';
 
 final getIt = GetIt.instance;
 
@@ -151,6 +161,47 @@ void setupDependencies() {
   getIt.registerLazySingleton<GetItemStockMovements>(
         () => GetItemStockMovements(
       getIt<StockMovementRepository>(),
+    ),
+  );
+
+  // ============================================================
+  // SALES
+  // ============================================================
+
+  getIt.registerLazySingleton<LocalSaleDataSource>(
+        () => LocalSaleDataSource(),
+  );
+
+  getIt.registerLazySingleton<SaleRepository>(
+        () => SaleRepositoryImpl(
+      getIt<LocalSaleDataSource>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<GetSales>(
+        () => GetSales(
+      getIt<SaleRepository>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<GetSaleById>(
+        () => GetSaleById(
+      getIt<SaleRepository>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<CreateSale>(
+        () => CreateSale(
+      getIt<SaleRepository>(),
+      getIt<GetItemById>(),
+      getIt<UpdateItem>(),
+      getIt<CreateStockMovement>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<DeleteSale>(
+        () => DeleteSale(
+      getIt<SaleRepository>(),
     ),
   );
 }

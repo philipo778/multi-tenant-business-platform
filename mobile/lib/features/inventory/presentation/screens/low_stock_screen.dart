@@ -107,7 +107,7 @@ class _LowStockScreenState extends State<LowStockScreen> {
                 32,
               ),
               itemCount: lowStockItems.length,
-              separatorBuilder: (_, __) =>
+              separatorBuilder: (_, _) =>
               const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final item = lowStockItems[index];

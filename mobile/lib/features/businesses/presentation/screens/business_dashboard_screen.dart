@@ -1,7 +1,9 @@
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../inventory/presentation/screens/inventory_screen.dart';
+import '../../../sales/presentation/screens/sales_screen.dart';
 import '../../domain/entities/business.dart';
 import '../widgets/dashboard_module_card.dart';
 import 'modules/module_placeholder_screen.dart';
@@ -61,15 +63,24 @@ class BusinessDashboardScreen extends StatelessWidget {
     );
   }
 
-  void _openModule(
-      BuildContext context,
-      String module,
-      ) {
+  void _openModule(BuildContext context, String module) {
     if (module == 'inventory') {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => InventoryScreen(
+            business: business,
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (module == 'sales') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SalesScreen(
             business: business,
           ),
         ),
